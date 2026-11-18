@@ -1,214 +1,94 @@
-local Base = require(script.Parent.BaseService)
-local Money = require(script.Parent.MoneyService)
-local Shield = require(script.Parent.ShieldService)
-local World = require(script.Parent.World)
-
-local Steal = { carrying = {} }
-
-function Steal.root(player)
-	local character = player.Character
-	local human = character and character:FindFirstChildOfClass("Humanoid")
-	if human and human.Health > 0 then
-		return character:FindFirstChild("HumanoidRootPart")
-	end
+local Base=require(script.Parent.BaseService)
+local Money=require(script.Parent.MoneyService)
+local Models=require(script.Parent.BrainrotModels)
+local World=require(script.Parent.World)
+local Shield=require(script.Parent.ShieldService)
+local Steal={}
+local function clearPrompts(model)
+ for _,obj in ipairs(model:GetDescendants()) do if obj:IsA("ProximityPrompt") then obj:Destroy() end end
 end
-
-function Steal.near(player,part,distance)
-	local root = Steal.root(player)
-	return root and (part.Position-root.Position).Magnitude <= distance
+function Steal.bind(owner,index,slot)
+ clearPrompts(slot.model)
+ World.prompt(slot.model.PrimaryPart,"Pick Up",slot.offer.data.name,0,function(player)
+  if player==owner then Steal.pickup(player,owner,index,slot) end
+ end)
+ World.prompt(slot.model.PrimaryPart,"Raid",slot.offer.data.name,1.25,function(player)
+  if player~=owner then Steal.pickup(player,owner,index,slot) end
+ end)
 end
-
-local function addPrompts(item)
-	if item.pickup then
-		item.pickup.Enabled = true
-		item.raid.Enabled = true
-		return
-	end
-	local pivot = item.model.PrimaryPart
-	item.pickup = World.prompt(pivot,"Pick Up",item.offer.character.name,0,9)
-	item.pickup.Exclusivity = Enum.ProximityPromptExclusivity.AlwaysShow
-	item.pickup:SetAttribute("InventoryAction","Own")
-	item.raid = World.prompt(pivot,"Raid",item.offer.character.name,1.25,9)
-	item.raid.Exclusivity = Enum.ProximityPromptExclusivity.AlwaysShow
-	item.raid:SetAttribute("InventoryAction","Other")
-	item.raid.Triggered:Connect(function(player)
-		Steal.take(player,item,true)
-	end)
-	item.pickup.Triggered:Connect(function(player)
-		Steal.take(player,item,false)
-	end)
+function Steal.pickup(player,owner,index,slot)
+ local state=Money.states[player] local victim=Money.states[owner]
+ local char=player.Character local hrp=char and char:FindFirstChild("HumanoidRootPart")
+ if not state or state.loading or not victim or not hrp or state.carry or slot.inTransit or victim.slots[index]~=slot then return end
+ if not Base.near(player,slot.model.PrimaryPart,11) then return end
+ local raid=player~=owner
+ if raid and (Shield.active(owner) or not Base.freeSlot(player)) then Base.notify(player,"Shield active or your safehouse is full.") return end
+ local home=Base.byPlayer[player] if not home then return end
+ slot.inTransit=true clearPrompts(slot.model)
+ Models.rig(slot.model)
+ slot.model:PivotTo(hrp.CFrame*CFrame.new(0,4.45,-0.35)) Models.anchor(slot.model,false)
+ local weld=Instance.new("WeldConstraint") weld.Name="CarryWeld" weld.Part0=hrp weld.Part1=slot.model.PrimaryPart weld.Parent=slot.model.PrimaryPart
+ state.carry={slot=slot,owner=owner,index=index,weld=weld,raid=raid,left=not Base.isSheltered(home,hrp.Position)}
+ player:SetAttribute("Carrying",true) player:SetAttribute("CarriedName",slot.offer.data.name)
+ Money.publish(owner)
+ Base.notify(player,raid and "Raid! Reach your safehouse." or "Leave and re-enter your safehouse to deliver. Sell at the Brainrot Shop.")
 end
-
-local function park(item,plot,slot)
-	slot.item = item
-	item.plot, item.slot, item.inTransit = plot, slot, false
-	item.model.PrimaryPart.Anchored = true
-	item.model:PivotTo(slot.pose)
-	item.model.PrimaryPart:SetAttribute("PlotOwner",plot.owner.UserId)
-	addPrompts(item)
-	Money.publish(plot.owner,Money.states[plot.owner])
+function Steal.detach(player)
+ local s=Money.states[player] local carry=s and s.carry if not carry then return end
+ s.carry=nil player:SetAttribute("Carrying",false) player:SetAttribute("CarriedName","")
+ if carry.weld then carry.weld:Destroy() end
+ Models.anchor(carry.slot.model,true)
+ for _,obj in ipairs(carry.slot.model.PrimaryPart:GetChildren()) do
+  if obj:IsA("WeldConstraint") then obj:Destroy() end
+ end
+ return carry
 end
-
-local function begin(player,item,root,kind)
-	local state = Money.states[player]
-	local pivot = item.model.PrimaryPart
-	item.inTransit = true
-	if item.pickup then
-		item.pickup.Enabled = false
-		item.raid.Enabled = false
-	end
-	item.model:PivotTo(root.CFrame*CFrame.new(0,4.45,-0.35))
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = root
-	weld.Part1 = pivot
-	weld.Parent = pivot
-	pivot.Massless = true
-	pivot.Anchored = false
-	local inside = Base.isSheltered(state.plot,root.Position)
-	Steal.carrying[player] = {item=item, weld=weld, kind=kind, leftHome=not inside}
-	player:SetAttribute("Carrying",true)
-	if item.plot and item.plot.owner then
-		Money.publish(item.plot.owner,Money.states[item.plot.owner])
-	end
+function Steal.restore(player)
+ local carry=Steal.detach(player) if not carry then return end
+ local victim=Money.states[carry.owner]
+ if victim and victim.slots[carry.index]==carry.slot and Base.byPlayer[carry.owner] then Base.park(carry.owner,carry.index,carry.slot)
+ else carry.slot.model:Destroy() end
+ Base.notify(player,"Brainrot returned to its stand.")
 end
-
-function Steal.take(player,item,raid)
-	local state = Money.states[player]
-	local root = Steal.root(player)
-	local plot = item.plot
-	if not state or not state.plot or not root or not plot or not plot.owner or item.inTransit
-		or item.slot.item ~= item or Steal.carrying[player] or not Steal.near(player,item.model.PrimaryPart,9) then
-		return
-	end
-	if raid then
-		if plot.owner == player or Shield.active(plot,workspace:GetServerTimeNow())
-			or not Base.isSheltered(plot,root.Position) then
-			return
-		end
-	elseif plot.owner ~= player then
-		return
-	end
-	begin(player,item,root,raid and "Raid" or "Pickup")
+function Steal.deliver(player)
+ local s=Money.states[player] local carry=s and s.carry if not carry then return end
+ local destination=Base.freeSlot(player)
+ if not destination and not carry.raid then destination=carry.index end
+ if not destination then Base.notify(player,"Safehouse full. Expand or sell your carry.") return end
+ carry=Steal.detach(player)
+ local victim=Money.states[carry.owner]
+ if victim then victim.slots[carry.index]=nil Money.publish(carry.owner) end
+ s.slots[destination]=carry.slot Base.park(player,destination,carry.slot)
+ Base.notify(player,carry.raid and "Raid delivered! This brainrot is yours." or "Delivery complete.")
 end
-
-function Steal.buy(player,record)
-	local state = Money.states[player]
-	local root = Steal.root(player)
-	if not state or not state.plot or not root or Steal.carrying[player]
-		or not Steal.near(player,record.model.PrimaryPart,10) then
-		return false
-	end
-	if not Base.freeSlot(state.plot,Money.capacity(state)) then
-		return false
-	end
-	if not Money.spend(player,state,record.offer.price) then
-		return false
-	end
-	record.prompt:Destroy()
-	begin(player,{model=record.model,offer=record.offer},root,"Purchase")
-	return true
-end
-
-local function detach(player,carry)
-	carry.weld:Destroy()
-	Steal.carrying[player] = nil
-	player:SetAttribute("Carrying",false)
-end
-
-local function releaseOrigin(item)
-	if item.slot then
-		item.slot.item = nil
-		local owner = item.plot.owner
-		if owner and Money.states[owner] then
-			Money.publish(owner,Money.states[owner])
-		end
-	end
-end
-
-function Steal.returnItem(player)
-	local carry = Steal.carrying[player]
-	if not carry then
-		return
-	end
-	local item = carry.item
-	detach(player,carry)
-	if item.plot and item.plot.owner then
-		park(item,item.plot,item.slot)
-	else
-		item.model:Destroy()
-	end
-end
-
 function Steal.sell(player)
-	local carry = Steal.carrying[player]
-	local state = Money.states[player]
-	if not carry or not state then
-		return
-	end
-	local item = carry.item
-	detach(player,carry)
-	releaseOrigin(item)
-	item.model:Destroy()
-	Money.credit(player,state,math.floor(item.offer.price*0.5))
+ local s=Money.states[player] local carry=s and s.carry if not carry then Base.notify(player,"Carry a brainrot here to sell it.") return end
+ carry=Steal.detach(player)
+ local victim=Money.states[carry.owner] if victim then victim.slots[carry.index]=nil Money.publish(carry.owner) end
+ local price=math.floor(carry.slot.offer.price*0.5) carry.slot.model:Destroy() Money.credit(player,price)
+ Base.notify(player,"Sold for $"..price..".")
 end
-
-function Steal.clearPlot(plot)
-	for player, carry in Steal.carrying do
-		if carry.item.plot == plot then
-			Steal.returnItem(player)
-		end
-	end
-	for _, slot in plot.slots do
-		if slot.item then
-			slot.item.model:Destroy()
-			slot.item = nil
-		end
-	end
-end
-
-function Steal.hasTransit(plot)
-	for _, slot in plot.slots do
-		if slot.item and slot.item.inTransit then
-			return true
-		end
-	end
-	return false
-end
-
 function Steal.step()
-	for player, carry in Steal.carrying do
-		local item = carry.item
-		local root = Steal.root(player)
-		local state = Money.states[player]
-		if not root or not state or not state.plot then
-			Steal.returnItem(player)
-			continue
-		end
-		if carry.kind == "Raid" then
-			local inVictimHouse = Base.isSheltered(item.plot,root.Position)
-			if not inVictimHouse then
-				carry.leftVictim = true
-			elseif carry.leftVictim then
-				Steal.returnItem(player)
-				continue
-			end
-		end
-		local home = state.plot
-		if not Base.isSheltered(home,root.Position) then
-			carry.leftHome = true
-		elseif carry.leftHome then
-			local slot = Base.freeSlot(home,Money.capacity(state))
-			if not slot and item.plot == home then
-				-- The vacated stand is still reserved for this item.
-				slot = item.slot
-			end
-			if slot then
-				detach(player,carry)
-				releaseOrigin(item)
-				park(item,home,slot)
-			end
-		end
-	end
+ for player,s in pairs(Money.states) do
+  local carry=s.carry
+  if carry then
+   local char=player.Character local hrp=char and char:FindFirstChild("HumanoidRootPart") local hum=char and char:FindFirstChildOfClass("Humanoid")
+   local home=Base.byPlayer[player]
+   if not hrp or not hum or hum.Health<=0 or not home then Steal.restore(player)
+   else
+    local inside=Base.isSheltered(home,hrp.Position)
+    if not inside then carry.left=true end
+    local victim=Base.byPlayer[carry.owner]
+    if carry.raid and victim and Base.isSheltered(victim,hrp.Position) then
+     if carry.leftVictim then Steal.restore(player) end
+    else carry.leftVictim=true end
+    if s.carry and inside and carry.left then Steal.deliver(player) end
+   end
+  end
+ end
 end
-
+function Steal.depart(player)
+ Steal.restore(player)
+ for raider,s in pairs(Money.states) do if s.carry and s.carry.owner==player then Steal.restore(raider) end end
+end
 return Steal

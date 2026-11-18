@@ -1,78 +1,51 @@
 local Data = {}
-local rgb = Color3.fromRGB
-
-Data.rarities = {
-	{ name = "Common", color = rgb(126, 249, 182), weight = 52 },
-	{ name = "Rare", color = rgb(103, 202, 255), weight = 26 },
-	{ name = "Epic", color = rgb(215, 143, 255), weight = 14 },
-	{ name = "Legendary", color = rgb(255, 191, 80), weight = 6 },
-	{ name = "Mythic", color = rgb(255, 112, 158), weight = 2 },
+Data.Rarities = {
+ {name="Common", color=Color3.fromRGB(126,249,182), weight=52},
+ {name="Rare", color=Color3.fromRGB(103,202,255), weight=26},
+ {name="Epic", color=Color3.fromRGB(215,143,255), weight=14},
+ {name="Legendary", color=Color3.fromRGB(255,191,80), weight=6},
+ {name="Mythic", color=Color3.fromRGB(255,112,158), weight=2},
 }
-
-local function entry(name, tier, price, rate, key, color, caption)
-	return { name = name, tier = tier, price = price, rate = rate, key = key, color = color, caption = caption }
-end
-
-Data.cast = {
-	entry("Tung Tung Tung Sahur", 1, 40, 4, "sahur", rgb(176,105,56), "Midnight drummer"),
-	entry("Boneca Ambalabu", 1, 65, 7, "boneca", rgb(103,204,99), "One-wheel frog"),
-	entry("Trippi Troppi", 1, 90, 10, "trippi", rgb(243,139,99), "Shrimp-tail cat"),
-	entry("Lirili Larila", 2, 190, 22, "lirili", rgb(82,171,114), "Desert explorer"),
-	entry("Frigo Camelo", 2, 330, 39, "frigo", rgb(174,221,233), "Cold cargo"),
-	entry("Chimpanzini Bananini", 2, 490, 58, "banana", rgb(246,196,59), "Banana bunch"),
-	entry("Brr Brr Patapim", 3, 850, 103, "patapim", rgb(98,151,67), "Forest wanderer"),
-	entry("Ballerina Cappuccina", 3, 1350, 170, "ballerina", rgb(243,129,168), "Porcelain pirouette"),
-	entry("Cappuccino Assassino", 3, 2100, 275, "assassino", rgb(90,77,110), "Silent espresso"),
-	entry("Orangutini Ananasini", 4, 3700, 510, "ananasini", rgb(231,157,51), "Pineapple crown"),
-	entry("Tralalero Tralala", 4, 5600, 820, "tralalero", rgb(80,158,197), "Three fresh kicks"),
-	entry("Bombardiro Crocodilo", 5, 9500, 1550, "bombardiro", rgb(106,141,115), "Crocodile airframe"),
-	entry("La Vaca Saturno Saturnita", 5, 14500, 2500, "saturnita", rgb(170,134,221), "Orbital cow"),
+Data.Cast = {
+ {name="Tung Tung Tung Sahur",tier=1,price=40,rate=4,key="sahur",color=Color3.fromRGB(176,105,56),caption="Midnight drummer"},
+ {name="Boneca Ambalabu",tier=1,price=65,rate=7,key="boneca",color=Color3.fromRGB(103,204,99),caption="One-wheel frog"},
+ {name="Trippi Troppi",tier=1,price=90,rate=10,key="trippi",color=Color3.fromRGB(243,139,99),caption="Shrimp-tail cat"},
+ {name="Lirili Larila",tier=2,price=190,rate=22,key="lirili",color=Color3.fromRGB(82,171,114),caption="Desert explorer"},
+ {name="Frigo Camelo",tier=2,price=330,rate=39,key="frigo",color=Color3.fromRGB(174,221,233),caption="Cold cargo"},
+ {name="Chimpanzini Bananini",tier=2,price=490,rate=58,key="banana",color=Color3.fromRGB(246,196,59),caption="Banana bunch"},
+ {name="Brr Brr Patapim",tier=3,price=850,rate=103,key="patapim",color=Color3.fromRGB(98,151,67),caption="Forest wanderer"},
+ {name="Ballerina Cappuccina",tier=3,price=1350,rate=170,key="ballerina",color=Color3.fromRGB(243,129,168),caption="Porcelain pirouette"},
+ {name="Cappuccino Assassino",tier=3,price=2100,rate=275,key="assassino",color=Color3.fromRGB(90,77,110),caption="Silent espresso"},
+ {name="Orangutini Ananasini",tier=4,price=3700,rate=510,key="ananasini",color=Color3.fromRGB(231,157,51),caption="Pineapple crown"},
+ {name="Tralalero Tralala",tier=4,price=5600,rate=820,key="tralalero",color=Color3.fromRGB(80,158,197),caption="Three fresh kicks"},
+ {name="Bombardiro Crocodilo",tier=5,price=9500,rate=1550,key="bombardiro",color=Color3.fromRGB(106,141,115),caption="Crocodile airframe"},
+ {name="La Vaca Saturno Saturnita",tier=5,price=14500,rate=2500,key="saturnita",color=Color3.fromRGB(170,134,221),caption="Orbital cow"},
 }
-
-Data.mutations = {
-	Gold = { multiplier = 2, color = rgb(255,199,101) },
-	Diamond = { multiplier = 3, color = rgb(122,225,255) },
-}
-
-local byTier = { {}, {}, {}, {}, {} }
-for _, character in Data.cast do
-	table.insert(byTier[character.tier], character)
+function Data.offer(index, allowMutation, rng)
+ rng = rng or Random.new()
+ local multiplier, mutation = 1, ""
+ if allowMutation then
+  local roll = rng:NextInteger(1,100)
+  if roll <= 4 then multiplier, mutation = 3, "Diamond"
+  elseif roll <= 19 then multiplier, mutation = 2, "Gold" end
+ end
+ local entry = Data.Cast[index]
+ return {index=index, data=entry, mutation=mutation, multiplier=multiplier,
+  price=math.floor(entry.price*(1+(multiplier-1)*0.35)), rate=entry.rate*multiplier}
 end
-
-function Data.offer(character, mutation)
-	local multiplier = mutation and Data.mutations[mutation].multiplier or 1
-	return {
-		character = character,
-		mutation = mutation,
-		price = math.floor(character.price * (1 + (multiplier - 1) * 0.35)),
-		rate = character.rate * multiplier,
-	}
+function Data.randomOffer(rng, starter)
+ local tier = 1
+ if not starter then
+  local roll = rng:NextInteger(1,100)
+  for i, rarity in ipairs(Data.Rarities) do
+   roll -= rarity.weight
+   if roll <= 0 then tier = i break end
+  end
+ end
+ local choices = {}
+ for i, entry in ipairs(Data.Cast) do
+  if entry.tier == tier then table.insert(choices,i) end
+ end
+ return Data.offer(choices[rng:NextInteger(1,#choices)], not starter, rng)
 end
-
-function Data.roll(random, starter)
-	local tier = 1
-	local mutation
-	if not starter then
-		local roll = random:NextInteger(1, 100)
-		for index, rarity in Data.rarities do
-			roll -= rarity.weight
-			if roll <= 0 then
-				tier = index
-				break
-			end
-		end
-	end
-	local choices = byTier[tier]
-	local character = choices[random:NextInteger(1, #choices)]
-	if not starter then
-		local roll = random:NextInteger(1, 100)
-		if roll <= 4 then
-			mutation = "Diamond"
-		elseif roll <= 19 then
-			mutation = "Gold"
-		end
-	end
-	return Data.offer(character, mutation)
-end
-
 return Data

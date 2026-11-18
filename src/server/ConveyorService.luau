@@ -1,52 +1,46 @@
-local Data = require(game:GetService("ReplicatedStorage"):WaitForChild("BrainrotData"))
-local Models = require(script.Parent.BrainrotModels)
-local Steal = require(script.Parent.StealService)
-local World = require(script.Parent.World)
-local Conveyor = {}
-local secondsPerOffer = 3.4
-local beltSpeed = 4.2
-local yaw = CFrame.Angles(0,-math.pi/2,0)
-
-function Conveyor.start(parent)
-	local records = {}
-	local random = Random.new()
-	local elapsed, serial = 0,0
-	local function offerAt(x,offer)
-		local model = Models.create(offer,parent,CFrame.new(x,World.beltTop,0)*yaw)
-		local prompt = World.prompt(model.PrimaryPart,"Buy",("$%d • %s"):format(offer.price,offer.character.name),0,10)
-		local record = {model=model,prompt=prompt,offer=offer,x=x,age=0}
-		records[record] = true
-		prompt.Triggered:Connect(function(player)
-			if records[record] and Steal.buy(player,record) then
-				records[record] = nil
-			end
-		end)
-	end
-	local starter = {2,1,3}
-	for index = 1,7 do
-		local characterIndex = starter[index-4]
-		local offer = characterIndex and Data.offer(Data.cast[characterIndex]) or Data.roll(random,false)
-		offerAt(World.importCurtain+index*17,offer)
-	end
-	return function(dt)
-		for record in records do
-			record.x += beltSpeed*dt
-			record.age += dt
-			if record.x >= World.receiverCurtain+6 then
-				record.model:Destroy()
-				records[record] = nil
-			else
-				local bounce = math.abs(math.sin(record.age*7))*0.26
-				record.model:PivotTo(CFrame.new(record.x,World.beltTop+bounce,0)*yaw)
-			end
-		end
-		elapsed += dt
-		while elapsed >= secondsPerOffer do
-			elapsed -= secondsPerOffer
-			serial += 1
-			offerAt(World.import,Data.roll(random,serial%3 == 0))
-		end
-	end
+local Data=require(game:GetService("ReplicatedStorage").Shared.BrainrotData)
+local Models=require(script.Parent.BrainrotModels)
+local World=require(script.Parent.World)
+local Money=require(script.Parent.MoneyService)
+local Base=require(script.Parent.BaseService)
+local Conveyor={offers={},rng=Random.new(),elapsed=0,count=0,time=0}
+function Conveyor.spawn(offer,x)
+ local model=Models.create(offer,World.root)
+ model:PivotTo(CFrame.new(x,1.8,0))
+ local item={offer=offer,model=model,x=x,phase=Conveyor.rng:NextNumber(0,math.pi*2)}
+ table.insert(Conveyor.offers,item)
+ local prompt=World.prompt(model.PrimaryPart,"Buy $"..offer.price,offer.data.name,0,function(player)
+  if item.sold or not model.Parent or not Base.near(player,model.PrimaryPart,11) then return end
+  local s=Money.states[player]
+  if not s or s.carry or not Base.freeSlot(player) then Base.notify(player,"Empty your hands and unlock a free stand.") return end
+  if not Money.spend(player,offer.price) then Base.notify(player,"Not enough cash.") return end
+  item.sold=true
+  for _,obj in ipairs(model:GetDescendants()) do if obj:IsA("ProximityPrompt") then obj:Destroy() end end
+  if not Base.install(player,offer,model) then item.sold=false Money.credit(player,offer.price) model:Destroy() return end
+  Base.notify(player,offer.data.name.." delivered to your safehouse.")
+ end)
+ return item
 end
-
+function Conveyor.start()
+ for i=1,7 do
+  local starter=({[5]=2,[6]=1,[7]=3})[i]
+  Conveyor.spawn(starter and Data.offer(starter,false,Conveyor.rng) or Data.randomOffer(Conveyor.rng,false),-115+i*17)
+ end
+end
+function Conveyor.step(dt)
+ Conveyor.time+=dt Conveyor.elapsed+=dt
+ while Conveyor.elapsed>=3.4 do
+  Conveyor.elapsed-=3.4 Conveyor.count+=1
+  Conveyor.spawn(Data.randomOffer(Conveyor.rng,Conveyor.count%3==0),-121)
+ end
+ for i=#Conveyor.offers,1,-1 do
+  local item=Conveyor.offers[i]
+  if item.sold or not item.model.Parent then table.remove(Conveyor.offers,i)
+  else
+   item.x+=4.2*dt
+   if item.x>=121 then item.model:Destroy() table.remove(Conveyor.offers,i)
+   else item.model:PivotTo(CFrame.new(item.x,1.8+math.abs(math.sin(Conveyor.time*3+item.phase))*0.26,0)) end
+  end
+ end
+end
 return Conveyor

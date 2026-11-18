@@ -2,17 +2,24 @@
   "name": "Brainrot Blitz",
   "tree": {
     "$className": "DataModel",
-    "Workspace": {
-      "$properties": { "StreamingEnabled": false }
-    },
     "ReplicatedStorage": {
-      "BrainrotData": { "$path": "src/shared/BrainrotData.luau" }
+      "Shared": { "$path": "src/shared" }
     },
     "ServerScriptService": {
-      "BrainrotBlitz": { "$path": "src/server" }
+      "BlitzServer": { "$path": "src/server" }
     },
     "StarterPlayer": {
-      "StarterPlayerScripts": { "$path": "src/client" }
-    }
+      "$properties": { "CameraMinZoomDistance": 7, "CameraMaxZoomDistance": 45 },
+      "StarterPlayerScripts": {
+        "BlitzClient": { "$path": "src/client" }
+      }
+    },
+    "Workspace": {
+      "$properties": { "FilteringEnabled": true, "Gravity": 196.2 }
+    },
+    "Lighting": {
+      "$properties": { "ClockTime": 10.5, "Brightness": 3.5 }
+    },
+    "SoundService": { "$properties": { "RespectFilteringEnabled": true } }
   }
 }
