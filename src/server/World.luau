@@ -1,7 +1,7 @@
 local Lighting = game:GetService("Lighting")
 local World = {}
 World.ink = Color3.fromRGB(19, 28, 48)
-World.steel = Color3.fromRGB(42, 57, 79)
+World.steel = Color3.fromRGB(99, 150, 181)
 World.aqua = Color3.fromRGB(78, 255, 218)
 World.gold = Color3.fromRGB(255, 199, 101)
 World.white = Color3.fromRGB(244, 248, 255)
@@ -84,25 +84,28 @@ function World.near(player, part)
 end
 
 function World.buildHarbor()
-	Lighting.ClockTime = 14
-	Lighting.Brightness = 3
-	Lighting.Ambient = Color3.fromRGB(153, 166, 183)
-	Lighting.OutdoorAmbient = Color3.fromRGB(155, 178, 196)
+	Lighting.ClockTime = 10.5
+	Lighting.Brightness = 3.5
+	Lighting.Ambient = Color3.fromRGB(180, 172, 160)
+	Lighting.OutdoorAmbient = Color3.fromRGB(191, 194, 188)
 	local atmosphere = Instance.new("Atmosphere")
-	atmosphere.Density = 0.2
-	atmosphere.Color = Color3.fromRGB(186, 222, 248)
-	atmosphere.Decay = Color3.fromRGB(140, 163, 212)
+	atmosphere.Density = 0.12
+	atmosphere.Glare = 0.12
+	atmosphere.Haze = 0.35
+	atmosphere.Color = Color3.fromRGB(206, 234, 255)
+	atmosphere.Decay = Color3.fromRGB(167, 206, 246)
 	atmosphere.Parent = Lighting
 	local clouds = Instance.new("Clouds")
-	clouds.Cover = 0.35
-	clouds.Density = 0.55
+	clouds.Color = Color3.fromRGB(255, 249, 238)
+	clouds.Cover = 0.26
+	clouds.Density = 0.72
 	clouds.Parent = workspace.Terrain
 	local map = Instance.new("Folder")
 	map.Name = "Blitz Harbor"
 	map.Parent = workspace
-	World.part(map, "Ocean", Vector3.new(1300, 8, 1300), CFrame.new(0, -8, 0), Color3.fromRGB(28, 126, 159), Enum.Material.Glass)
-	World.part(map, "Harbor island", Vector3.new(200, 8, 112), CFrame.new(0, -4, 0), Color3.fromRGB(171, 176, 174), Enum.Material.Concrete)
-	local belt = World.part(map, "Conveyor", Vector3.new(179, 0.9, 10), CFrame.new(0, 0.45, 0), World.ink, Enum.Material.Metal)
+	World.part(map, "Ocean", Vector3.new(1300, 8, 1300), CFrame.new(0, -8, 0), Color3.fromRGB(35, 172, 235), Enum.Material.SmoothPlastic)
+	World.part(map, "Harbor island", Vector3.new(200, 8, 112), CFrame.new(0, -4, 0), Color3.fromRGB(226, 209, 177), Enum.Material.Concrete)
+	local belt = World.part(map, "Conveyor", Vector3.new(179, 0.9, 10), CFrame.new(0, 0.45, 0), Color3.fromRGB(49, 116, 161), Enum.Material.SmoothPlastic)
 	for x = -86, 86, 4 do
 		World.part(map, "Conveyor tread", Vector3.new(0.24, 0.08, 9.6), CFrame.new(x, 0.94, 0), World.steel)
 	end
@@ -111,7 +114,7 @@ function World.buildHarbor()
 	end
 	for _, x in ipairs({ -88, 88 }) do
 		for _, z in ipairs({ -6, 6 }) do
-			World.part(map, "Terminal column", Vector3.new(2, 12, 2), CFrame.new(x, 6, z), World.ink)
+			World.part(map, "Terminal column", Vector3.new(2, 12, 2), CFrame.new(x, 6, z), World.steel)
 		end
 		local arch = World.part(map, "Terminal arch", Vector3.new(3, 2, 15), CFrame.new(x, 12, 0), World.aqua, Enum.Material.Neon)
 		World.sign(arch, x < 0 and "BLITZ HARBOR  /  IMPORTS" or "END OF LINE", World.white, 265, 32, Vector3.new(0, 2, 0), 105)
@@ -123,7 +126,7 @@ function World.buildHarbor()
 	end
 	for _, x in ipairs({ -97, 97 }) do
 		for z = -48, 48, 16 do
-			local post = World.part(map, "Harbor beacon", Vector3.new(2, 8, 2), CFrame.new(x, 4, z), World.ink)
+			local post = World.part(map, "Harbor beacon", Vector3.new(2, 8, 2), CFrame.new(x, 4, z), World.steel)
 			World.part(map, "Beacon light", Vector3.new(2.1, 0.45, 2.1), post.CFrame * CFrame.new(0, 3.9, 0), World.gold, Enum.Material.Neon)
 		end
 	end
@@ -135,17 +138,19 @@ function World.buildHarbor()
 		part.CanQuery = false
 		return part
 	end
-	local teal = Color3.fromRGB(26, 104, 113)
-	local vermilion = Color3.fromRGB(212, 78, 55)
+	local teal = Color3.fromRGB(25, 169, 164)
+	local vermilion = Color3.fromRGB(244, 101, 75)
 	local cream = Color3.fromRGB(255, 232, 185)
 	local metal = Enum.Material.Metal
 	local glow = Enum.Material.Neon
+	local beltLights = { World.gold, World.aqua, Color3.fromRGB(255, 121, 190), Color3.fromRGB(132, 177, 255) }
 	for _, side in ipairs({ -1, 1 }) do
 		local z = side * 5
 		detail("Conveyor edge rail", 175, 0.28, 0.34, 0, 1.22, z, World.steel, metal)
 		for x = -80, 80, 10 do
 			detail("Belt skirt bracket", 0.6, 1.15, 0.42, x, 0.58, z, World.steel, metal)
-			detail("Amber belt marker", 1.45, 0.13, 0.42, x, 1.4, z, World.gold, glow)
+			local color = beltLights[(x / 10 + side) % #beltLights + 1]
+			detail("Belt marker", 2.2, 0.13, 0.44, x, 1.4, z, color, glow)
 		end
 		local edge = side * 55
 		detail("Quayside curb", 199, 0.26, 0.85, 0, 0.13, edge, cream, Enum.Material.Concrete)
@@ -163,7 +168,7 @@ function World.buildHarbor()
 		end
 		for x = -75, 75, 25 do
 			detail("Wake stripe", 12, 0.05, 0.45, x, -3.96, side * (67 + math.abs(x) % 12),
-				Color3.fromRGB(109, 207, 221))
+				Color3.fromRGB(169, 235, 255))
 		end
 	end
 
@@ -190,7 +195,7 @@ function World.buildHarbor()
 
 	for _, cargo in ipairs({
 		{ -46, 3, 74, vermilion }, { -30, 3, 74, teal },
-		{ -38, 9, 74, World.gold }, { -15, 3, 81, Color3.fromRGB(72, 105, 185) },
+		{ -38, 9, 74, World.gold }, { -15, 3, 81, Color3.fromRGB(87, 136, 239) },
 	}) do
 		local x, y, z, color = table.unpack(cargo)
 		detail("Freight container", 15.6, 6, 7.4, x, y, z, color, metal)

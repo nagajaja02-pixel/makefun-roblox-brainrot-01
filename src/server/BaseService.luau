@@ -8,8 +8,8 @@ Base.lockCooldown = 48
 Base.startingCash = 150
 
 local plotColors = {
-	Color3.fromRGB(22, 126, 128), Color3.fromRGB(182, 79, 53), Color3.fromRGB(74, 106, 183),
-	Color3.fromRGB(130, 76, 153), Color3.fromRGB(54, 128, 77), Color3.fromRGB(159, 108, 36),
+	Color3.fromRGB(27, 192, 190), Color3.fromRGB(250, 115, 93), Color3.fromRGB(85, 144, 247),
+	Color3.fromRGB(197, 119, 247), Color3.fromRGB(103, 200, 92), Color3.fromRGB(248, 177, 56),
 }
 
 function Base.build(map)
@@ -28,7 +28,7 @@ function Base.build(map)
 			local pale = accent:Lerp(World.white, 0.78)
 			local metal = Enum.Material.Metal
 			part("Shelter deck", Vector3.new(48, 0.4, 28), 0, 0.2, 0, pale, Enum.Material.Concrete)
-			part("Back wall", Vector3.new(48, 7, 0.65), 0, 3.5, 13.5, accent, metal)
+			part("Back wall", Vector3.new(48, 7, 0.65), 0, 3.5, 13.5, pale)
 			local function trim(name, sx, sy, sz, lx, ly, lz, color, material)
 				local item = part(name, Vector3.new(sx, sy, sz), lx, ly, lz, color, material)
 				item.CanCollide = false
@@ -52,7 +52,7 @@ function Base.build(map)
 			end
 			trim("Shelter roof", 49, 0.65, 27, 0, 8.35, 1, accent, metal)
 			trim("Roof raised center", 36, 0.55, 23, 0, 8.85, 1, accent:Lerp(World.white, 0.3), metal)
-			local fascia = trim("Safehouse nameboard", 22, 1.65, 0.65, 0, 8.85, -12.54, accent, metal)
+			local fascia = trim("Safehouse nameboard", 22, 1.65, 0.65, 0, 8.85, -12.54, World.ink)
 			World.surfaceSign(fascia, string.format("SAFEHOUSE  %02d", plot), World.white)
 			local gate = part("Shield status", Vector3.new(48, 0.42, 0.7), 0, 8, -12, World.aqua, Enum.Material.Neon)
 			local title = World.sign(gate, "AVAILABLE SAFEHOUSE", World.white, 255, 34, Vector3.new(0, 2.1, 0))
