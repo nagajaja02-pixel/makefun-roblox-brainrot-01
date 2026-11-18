@@ -1,4 +1,10 @@
+[![make.fun · roblox-brainrot-01](https://make.fun/badge/roblox-brainrot-01.svg)](https://make.fun/bounty/roblox-brainrot-01?utm_source=github&utm_medium=readme&utm_campaign=roblox-brainrot-01)
+[![rank](https://make.fun/badge/roblox-brainrot-01/nagajaja02-pixel/makefun-roblox-brainrot-01/rank.svg)](https://make.fun/bounty/roblox-brainrot-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=roblox-brainrot-01)
+[![reward](https://make.fun/badge/roblox-brainrot-01/nagajaja02-pixel/makefun-roblox-brainrot-01/reward.svg)](https://make.fun/bounty/roblox-brainrot-01?utm_source=github&utm_medium=readme&utm_campaign=roblox-brainrot-01)
+
 # Brainrot Blitz
+
+Built for the [roblox-brainrot-01 bounty on make.fun](https://make.fun/bounty/roblox-brainrot-01).
 
 Brainrot Blitz is a Roblox tycoon set in a neon harbor. A moving supply belt brings in thirteen absurd imports, from the Burrito Bailiff to the Cosmic Coupon. Each import pays cash per second once delivered to your safehouse. Buy higher rarities, expand the collection and decide when to risk a raid or race home ahead of a tsunami.
 
@@ -24,4 +30,4 @@ Open `game.rbxl` in Roblox Studio and press **Play** to spawn the map and charac
 5. When the evacuation alarm fires, get inside your own safehouse before the wave passes. Falling with a purchased unit in transit refunds it. A stolen unit still in transit goes back to its owner.
 6. Use **Rebirth** to restart with $150 and an empty collection. Stand upgrades carry over and each rebirth adds 50% to income permanently in the published experience. Studio keeps rebirths for the test session. Cash, crew and stand upgrades are session-local.
 
-The captures and public play link are pending owner setup in Studio. Build the place from the Luau in `src/` before you capture or publish it.
+Play it live: https://www.roblox.com/games/105239944014039 — Brainrot Blitz - Steal And Tsunami (Public).
