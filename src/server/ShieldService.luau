@@ -1,3 +1,5 @@
+local PhysicsService = game:GetService("PhysicsService")
+
 local World = require(script.Parent.World)
 
 local Shield = {}
@@ -5,38 +7,71 @@ local activeDuration = 26
 local cooldown = 48
 local cyan = Color3.fromRGB(36, 232, 255)
 
-function Shield.build(frame, cornerX, cornerZ, pierWidth, floor, top)
+function Shield.trackCharacter(character, ownerGroup)
+	local function assign(part, group)
+		if part:IsA("BasePart") then
+			part.CollisionGroup = group
+		end
+	end
+
+	local added = character.DescendantAdded:Connect(function(part)
+		assign(part, ownerGroup)
+	end)
+	for _, part in ipairs(character:GetDescendants()) do
+		assign(part, ownerGroup)
+	end
+	return function()
+		added:Disconnect()
+		for _, part in ipairs(character:GetDescendants()) do
+			assign(part, "Default")
+		end
+	end
+end
+
+function Shield.build(frame, plot, cornerX, cornerZ, floor, top)
+	local ownerGroup = "SafehouseOwner" .. plot
+	local barrierGroup = "SafehouseBarrier" .. plot
+	PhysicsService:RegisterCollisionGroup(ownerGroup)
+	PhysicsService:RegisterCollisionGroup(barrierGroup)
+	-- New groups collide with every group by default. Only this plot's owner is exempt.
+	PhysicsService:CollisionGroupSetCollidable(barrierGroup, ownerGroup, false)
+
 	local visual = Instance.new("Folder")
 	visual.Name = "Shield lasers"
-	local beamWidth = 0.26
-	local height = top - beamWidth / 2 - floor
-	local centerY = floor + height / 2
-	local spanX, spanZ = 2 * cornerX - pierWidth, 2 * cornerZ - pierWidth
-	local function laser(name, sx, sy, sz, x, y, z, transparency)
+	local beamWidth, barrierWidth = 0.26, 0.3
+	local beamY = top - beamWidth / 2
+	local height = top - floor
+	local centerY = (floor + top) / 2
+	-- Side panels span both corners. End panels butt up against their inner faces.
+	local spanX, spanZ = 2 * cornerX - barrierWidth, 2 * cornerZ + barrierWidth
+	local function laser(name, sx, sy, sz, x, y, z, transparency, collidable)
 		local part = World.part(visual, name, Vector3.new(sx, sy, sz),
 			frame * CFrame.new(x, y, z), cyan, Enum.Material.Neon)
 		part.Transparency = transparency
-		part.CanCollide = false
+		part.CanCollide = collidable == true
 		part.CanTouch = false
-		part.CanQuery = false
+		part.CanQuery = part.CanCollide
 		part.CastShadow = false
+		if collidable then
+			part.CollisionGroup = barrierGroup
+		end
 	end
 
 	for _, side in ipairs({ -1, 1 }) do
 		local x, z = side * cornerX, side * cornerZ
-		laser("Shield side", 0.1, height, spanZ, x, centerY, 0, 0.92)
-		laser("Shield end", spanX, height, 0.1, 0, centerY, z, 0.92)
-		laser("Shield side beam", beamWidth, beamWidth, spanZ, x, top, 0, 0.12)
-		laser("Shield end beam", spanX, beamWidth, beamWidth, 0, top, z, 0.12)
-		-- Bars extend into the top beam so their end faces are separate from the pane edges.
+		laser("Shield side", barrierWidth, height, spanZ, x, centerY, 0, 0.92, true)
+		laser("Shield end", spanX, height, barrierWidth, 0, centerY, z, 0.92, true)
+		laser("Shield side beam", beamWidth, beamWidth, spanZ - 0.02, x, beamY - 0.02, 0, 0.12)
+		laser("Shield end beam", spanX - 0.02, beamWidth, beamWidth, 0, beamY - 0.02, z, 0.12)
+		local barHeight = height - 0.2
 		for along = -16, 16, 4 do
-			laser("Shield side bar", 0.21, height + 0.06, 0.21, x, centerY + 0.07, along, 0.22)
+			laser("Shield side bar", 0.21, barHeight, 0.21, x, centerY, along, 0.22)
 		end
 		for along = -10, 10, 4 do
-			laser("Shield end bar", 0.21, height + 0.06, 0.21, along, centerY + 0.07, z, 0.22)
+			laser("Shield end bar", 0.21, barHeight, 0.21, along, centerY, z, 0.22)
 		end
 	end
-	return visual
+	return visual, ownerGroup
 end
 
 function Shield.update(state, now)

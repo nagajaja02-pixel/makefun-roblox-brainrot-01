@@ -143,11 +143,21 @@ local function assignSafehouse(player)
 	player:SetAttribute("Carrying", "")
 	player:SetAttribute("Home", base.entrance)
 	player.RespawnLocation = nil
+	local function trackShieldCharacter(character)
+		if state.releaseShieldCharacter then
+			state.releaseShieldCharacter()
+		end
+		state.releaseShieldCharacter = Shield.trackCharacter(character, base.ownerCollisionGroup)
+	end
+	if player.Character then
+		trackShieldCharacter(player.Character)
+	end
 	Shield.activate(state, workspace:GetServerTimeNow())
 	Base.refreshStands(state)
 	Money.publish(state)
 
-	player.CharacterAdded:Connect(function(character)
+	state.characterAdded = player.CharacterAdded:Connect(function(character)
+		trackShieldCharacter(character)
 		local humanoid = character:WaitForChild("Humanoid")
 		humanoid.Died:Connect(function()
 			if state.carry then
@@ -192,6 +202,10 @@ Players.PlayerRemoving:Connect(function(player)
 	Base.clearCollection(state)
 	state.base.owner = nil
 	Shield.clear(state.base)
+	state.characterAdded:Disconnect()
+	if state.releaseShieldCharacter then
+		state.releaseShieldCharacter()
+	end
 	for _, stand in ipairs(state.base.stands) do
 		stand.Color = World.steel
 	end

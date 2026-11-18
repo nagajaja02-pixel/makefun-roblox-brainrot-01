@@ -11,8 +11,9 @@ local width, depth = 26, 40
 local halfWidth, halfDepth = width / 2, depth / 2
 local cornerWidth = 1.2
 local shieldX, shieldZ = halfWidth - cornerWidth / 2, halfDepth - cornerWidth / 2
-local shieldTop = 8
-local deckTop = 0.4
+local deckTop, wallTop = 0.4, 9.6
+local windowBottom, windowTop = 5.4, 8.65
+local doorWidth, doorTop = 6, 7.5
 
 local plotColors = {
 	Color3.fromRGB(27, 192, 190), Color3.fromRGB(250, 115, 93), Color3.fromRGB(85, 144, 247),
@@ -44,24 +45,37 @@ function Base.build(map)
 			end
 
 			part("Shelter deck", Vector3.new(width, deckTop, depth), 0, deckTop / 2, 0, pale, flat)
-			-- Opaque barriers are their own colliders. The display bays between them are open.
-			part("Rear service wall", Vector3.new(18, 10, cornerWidth), 0, 5.4, shieldZ, panel, flat)
+			local wallHeight = wallTop - deckTop
+			local wallY = deckTop + wallHeight / 2
+			local innerWidth, sideSpan = width - 2 * cornerWidth, depth - 2 * cornerWidth
+			local jambWidth = (innerWidth - doorWidth) / 2
+			part("Rear service wall", Vector3.new(innerWidth, wallHeight, cornerWidth), 0, wallY, shieldZ, panel, flat)
 			for _, side in ipairs({ -1, 1 }) do
 				for _, endSide in ipairs({ -1, 1 }) do
-					part("Shield corner pier", Vector3.new(cornerWidth, 9.2, cornerWidth),
-						side * shieldX, 5, endSide * shieldZ, World.ink, flat)
+					part("Shield corner pier", Vector3.new(cornerWidth, wallHeight, cornerWidth),
+						side * shieldX, wallY, endSide * shieldZ, World.ink, flat)
 				end
-				part("Side wind baffle", Vector3.new(cornerWidth, 8.5, 2.4),
-					side * shieldX, 4.65, -0.5, panel, flat)
-				detail("Canopy wing", 8, 0.7, depth - 2 * cornerWidth, side * 8.6, 9.25, 0, accent)
+				local wallX = side * shieldX
+				part("Side wall", Vector3.new(cornerWidth, windowBottom - deckTop, sideSpan),
+					wallX, (deckTop + windowBottom) / 2, 0, panel, flat)
+				part("Side window header", Vector3.new(cornerWidth, wallTop - windowTop, sideSpan),
+					wallX, (windowTop + wallTop) / 2, 0, World.ink, flat)
+				-- Recessed glazing keeps the sightline open even when players jump at the sill.
+				local window = part("Side display window", Vector3.new(0.16, windowTop - windowBottom, sideSpan),
+					wallX, (windowBottom + windowTop) / 2, 0, pale, flat)
+				window.Transparency = 0.78
+				window.CastShadow = false
+				part("Front wall", Vector3.new(jambWidth, wallHeight, cornerWidth),
+					side * (doorWidth + jambWidth) / 2, wallY, -shieldZ, panel, flat)
+				detail("Canopy wing", 6.8, 0.7, sideSpan - 0.8, side * 8, 9.25, 0, accent)
 				detail("Canopy edge light", 0.22, 0.12, 34, side * 5, 8.84, 0, pale, neon)
 				detail("Aisle guide", 0.18, 0.03, 35, side * 4.7, 0.415, -0.5, panel)
 			end
 			detail("Raised service canopy", 18, 0.65, 6, 0, 10.725, 17, accent)
-			local fascia = detail("Safehouse nameboard", width - 2 * cornerWidth, 1.25, 0.9,
-				0, 8.925, -shieldZ, World.ink)
+			local fascia = part("Safehouse nameboard", Vector3.new(doorWidth, wallTop - doorTop, cornerWidth),
+				0, (wallTop + doorTop) / 2, -shieldZ, World.ink, flat)
 			World.surfaceSign(fascia, string.format("SAFEHOUSE  %02d", plot), World.white)
-			local gate = detail("Shield status", 4, 0.18, 0.14, 0, 8.39, -shieldZ - 0.53, World.aqua, neon)
+			local gate = detail("Shield status", 4, 0.18, 0.14, 0, 7.36, -shieldZ - 0.53, World.aqua, neon)
 			local title = World.sign(gate, "AVAILABLE SAFEHOUSE", World.white, 255, 34, Vector3.new(0, 2.8, 0))
 			local drop = detail("Drop zone", 9, 0.03, 6, 0, 0.415, -14, World.aqua, neon)
 			World.sign(drop, "DELIVERY  /  WAVE SHELTER", World.aqua, 235, 27, Vector3.new(0, 0.85, 0), 33)
@@ -82,10 +96,11 @@ function Base.build(map)
 				detail("Display light", 4.2, 0.08, 0.08, side * column, 0.56, row - 2.3, pale, neon)
 				stands[index] = stand
 			end
+			local shieldVisual, ownerCollisionGroup = Shield.build(frame, plot, shieldX - 0.8, shieldZ - 0.8, deckTop, wallTop)
 			table.insert(bases, {
 				frame = frame, gate = gate, title = title, stands = stands, controls = controls, model = model,
 				entrance = (frame * CFrame.new(0, 0, -halfDepth + 4)).Position,
-				shieldVisual = Shield.build(frame, shieldX, shieldZ, cornerWidth, deckTop + 0.02, shieldTop),
+				shieldVisual = shieldVisual, ownerCollisionGroup = ownerCollisionGroup,
 			})
 		end
 	end
