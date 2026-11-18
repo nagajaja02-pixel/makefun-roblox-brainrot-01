@@ -1,215 +1,264 @@
 local World = require(script.Parent.World)
-local flat = Enum.Material.SmoothPlastic
 local Models = {}
 
 local rgb = Color3.fromRGB
 local ink, ivory, gold = World.ink, World.white, World.gold
 local silver = rgb(177, 202, 213)
 local rose = rgb(244, 96, 110)
+local black = rgb(0, 0, 0)
+local green = rgb(117, 255, 103)
+local brown = rgb(113, 65, 42)
 local ball = Enum.PartType.Ball
 local tube = Enum.PartType.Cylinder
 local neon = Enum.Material.Neon
 
--- All sculpts face -Z and share a floor plane. Cylinders run along local X.
+-- The sculpts face -Z and share a floor plane. Cylinders run along local X.
 local cast = {}
 
-cast["Burrito Bailiff"] = function(p, face, hue)
-	p("Tortilla roll", 2.05, 2.95, 1.65, 0, 1.92, 0, hue, ball)
-	p("Foil wrapper", 2.02, 1.1, 1.65, 0, 1.02, 0, silver, ball, nil, flat)
-	p("Folded seam", 0.22, 1.45, 0.22, 0.66, 1.62, -0.66, ivory, ball, -0.54)
+cast.sahur = function(p, face, hue)
+	p("Carved timber", 1.48, 2.72, 1.3, 0, 2.17, 0, hue)
+	p("End grain", 1.3, 0.12, 1.12, 0, 3.57, 0, brown)
 	for _, side in ipairs({ -1, 1 }) do
-		p("Lettuce fringe", 0.66, 0.56, 0.92, side * 0.66, 3.16, 0, rgb(81, 168, 69), ball)
-		p("Uniform boot", 0.7, 0.62, 1.06, side * 0.61, 0.32, -0.13, ink, ball)
+		p("Wood grain", 0.07, 1.54, 0.04, side * 0.59, 1.87, -0.66, brown, nil, side * 0.08)
+		p("Arm", 0.27, 1.22, 0.32, side * 0.91, 1.62, 0, hue, ball, side * 0.34)
+		p("Leg", 0.31, 0.94, 0.37, side * 0.43, 0.63, 0, hue)
+		p("Foot", 0.5, 0.31, 0.76, side * 0.43, 0.17, -0.17, hue, ball)
 	end
-	p("Bailiff cap", 0.68, 2.38, 1.65, 0, 3.46, 0, ink, tube, math.pi / 2)
-	p("Cap visor", 2.19, 0.16, 1.14, 0, 3.24, -0.69, ink, ball)
-	p("Cap badge", 0.51, 0.51, 0.15, 0, 3.53, -0.83, gold, nil, math.pi / 4)
-	p("Chest badge", 0.26, 0.26, 0.12, 0.52, 1.51, -0.78, gold, nil, math.pi / 4)
-	face(0, 2.39, -0.84, 0.42, 1, 0.04, -0.36, 0.15)
+	p("Drum beater", 0.27, 1.75, 0.27, 1.42, 1.45, -0.23, brown, nil, 0.48)
+	p("Beater head", 0.48, 0.65, 0.5, 1.03, 2.24, -0.23, gold, ball, 0.48)
+	face(0, 2.69, -0.66, 0.34, 0.74, 0.03, 0.23, 0.35)
 end
 
-cast["Toaster Intern"] = function(p, face, hue)
-	p("Enamel toaster", 2.42, 1.62, 1.46, 0, 1.34, 0, hue)
-	p("Chrome plinth", 2.52, 0.24, 1.55, 0, 0.45, 0, silver, nil, nil, flat)
-	p("Toast slot", 1.8, 0.07, 0.55, 0, 2.17, 0, ink)
-	p("Toast crust", 1.75, 1.49, 0.38, -0.15, 2.7, 0, rgb(158, 95, 47), ball, 0.14)
-	p("Toast crumb", 1.5, 1.22, 0.16, -0.15, 2.74, -0.18, gold, ball, 0.14)
-	p("Lever", 0.65, 0.18, 0.35, 1.45, 1.23, 0, silver)
-	p("Intern tie", 0.35, 0.55, 0.11, 0, 0.83, -0.76, rgb(57, 78, 144), nil, -0.18)
+cast.boneca = function(p, face, hue)
+	p("Tire", 0.85, 2.08, 2.08, 0, 1.56, 0, ink, tube).Orientation = Vector3.new(0, 90, 0)
+	p("Rim", 0.22, 1.18, 1.18, 0, 1.56, -0.44, silver, tube).Orientation = Vector3.new(0, 90, 0)
+	p("Frog head", 2.17, 1.15, 1.35, 0, 2.65, -0.15, hue, ball)
 	for _, side in ipairs({ -1, 1 }) do
-		p("Spectacle frame", 0.87, 0.8, 0.16, side * 0.46, 1.72, -0.77, ink)
+		p("Eye bulge", 0.8, 0.8, 0.7, side * 0.55, 3.08, -0.45, hue, ball)
+		p("Long leg", 0.36, 1.22, 0.39, side * 0.79, 0.73, -0.02, rgb(215, 162, 118), ball, side * 0.27)
+		p("Foot", 0.56, 0.29, 0.78, side * 0.96, 0.16, -0.21, rgb(215, 162, 118), ball)
 	end
-	p("Spectacle bridge", 0.4, 0.1, 0.1, 0, 1.76, -0.8, ink)
-	face(0, 1.72, -0.88, 0.46, 0.92, -0.1, 0.19, 0.3)
+	face(0, 2.98, -0.81, 0.54, 0.83, -0.03, 0.1, 0.21)
 end
 
-cast["Puddle Auditor"] = function(p, face, hue)
-	p("Puddle", 3.85, 0.34, 2.65, 0, 0.2, 0, hue, ball)
-	p("Raised splash", 1.85, 1.32, 1.38, -0.33, 0.71, 0, hue, ball)
-	p("Splash tail", 1.05, 0.33, 1.22, 1.77, 0.18, 0.59, hue, ball)
-	p("Suspended drop", 0.62, 0.89, 0.5, -1.29, 1.65, 0.19, hue, ball, -0.42)
+cast.trippi = function(p, face, hue)
+	for step = 0, 4 do
+		local size = 1.45 - step * 0.19
+		p("Shrimp segment", size, size * 0.78, 0.87, 0, 0.73 + step * step * 0.065,
+			-0.26 + step * 0.43, hue:Lerp(rose, step * 0.14), ball)
+	end
+	p("Cat head", 1.74, 1.4, 1.3, 0, 1.72, -0.76, ivory, ball)
 	for _, side in ipairs({ -1, 1 }) do
-		p("Round spectacles", 0.73, 0.72, 0.17, -0.33 + side * 0.39, 1.03, -0.54, ink, ball)
+		p("Pointed ear", 0.53, 0.63, 0.31, side * 0.59, 2.31, -0.79, hue, nil, side * 0.45)
+		p("Tail fan", 0.59, 0.16, 0.85, side * 0.24, 1.94, 1.7, rose, ball, side * 0.32)
+		p("Whisker", 0.48, 0.05, 0.06, side * 0.72, 1.57, -1.34, brown, nil, side * 0.18)
 	end
-	face(-0.33, 1.03, -0.68, 0.39, 0.85, 0.12, -0.25, 0.13)
-	p("Clipboard", 1.09, 1.55, 0.16, 1.12, 0.99, -0.42, rgb(144, 91, 56), nil, -0.24)
-	p("Audit sheet", 0.87, 1.2, 0.06, 1.12, 0.99, -0.53, ivory, nil, -0.24)
-	p("Clipboard clamp", 0.42, 0.15, 0.13, 1.28, 1.67, -0.57, silver)
+	face(0, 1.86, -1.39, 0.37, 0.76, 0.05, 0.17, 0.24)
 end
 
-cast["Pickle Pilot"] = function(p, face, hue)
-	p("Bent gherkin", 1.56, 3.45, 1.42, 0, 1.83, 0, hue, ball, -0.26)
-	p("Leather flight cap", 1.49, 1.02, 1.39, 0.35, 3.07, 0.01, rgb(122, 69, 43), ball, -0.23)
-	p("Goggle strap", 1.65, 0.22, 1.25, 0.31, 2.88, 0, ink, ball)
+cast.lirili = function(p, face, hue)
+	p("Cactus body", 1.59, 2.29, 1.34, 0, 1.65, 0, hue, ball)
+	p("Elephant head", 1.55, 1.25, 1.34, 0, 2.84, -0.34, silver, ball)
+	p("Trunk", 0.34, 1.13, 0.4, 0, 2.36, -1.05, silver, ball, -0.26)
 	for _, side in ipairs({ -1, 1 }) do
-		p("Aviator goggles", 0.74, 0.72, 0.26, 0.28 + side * 0.39, 2.8, -0.57, gold, ball)
-		p("Pickle bump", 0.26, 0.3, 0.23, side * 0.5, 1.22 + side * 0.21, -0.49, hue:Lerp(ink, 0.3), ball)
+		p("Elephant ear", 0.94, 1.19, 0.36, side * 0.84, 2.84, -0.27, silver, ball, side * 0.36)
+		p("Cactus rib", 0.16, 1.22, 0.17, side * 0.39, 1.53, -0.54, hue:Lerp(ink, 0.25), ball)
+		p("Sandal sole", 0.69, 0.19, 1.2, side * 0.49, 0.1, -0.22, brown)
+		p("Sandal strap", 0.66, 0.2, 0.32, side * 0.49, 0.27, -0.39, gold)
+		p("Foot", 0.56, 0.64, 0.83, side * 0.49, 0.43, -0.06, silver, ball)
 	end
-	face(0.28, 2.8, -0.75, 0.39, 0.83, 0.09, 0.12, 0.24)
-	p("Scarf wrap", 1.62, 0.3, 1.46, 0.11, 2.17, 0, rose, ball, -0.21)
-	p("Streaming scarf", 1.95, 0.47, 0.23, 1.43, 2.01, 0.03, rose, nil, -0.28)
+	face(0, 2.98, -0.98, 0.34, 0.66, -0.04, -0.12, 0.13)
 end
 
-cast["Fax Machine DJ"] = function(p, face, hue)
-	p("Fax console", 2.62, 1.23, 1.86, 0, 0.86, 0, hue)
-	p("Upright paper tray", 1.83, 1.32, 0.4, 0, 1.94, 0.61, hue)
-	p("Fax printout", 1.52, 1.6, 0.16, 0, 2.18, 0.41, ivory)
-	for y = 2.2, 2.75, 0.18 do
-		p("Printed line", 0.99, 0.055, 0.025, 0, y, 0.32, silver)
-	end
-	p("Headphone band", 3.55, 0.32, 0.36, 0, 3.12, 0.32, ink, ball)
+cast.frigo = function(p, face, hue)
+	p("Refrigerator", 1.73, 2.28, 1.39, 0, 1.63, 0.24, hue)
+	p("Freezer door", 1.65, 0.61, 0.18, 0, 2.39, -0.5, ivory)
+	p("Fridge door", 1.65, 1.43, 0.18, 0, 1.33, -0.5, ivory)
+	p("Door handle", 0.11, 0.54, 0.14, -0.61, 1.6, -0.65, silver)
+	p("Camel neck", 0.62, 1.56, 0.59, 0.47, 2.56, -0.55, gold, ball, -0.29)
+	p("Camel head", 1.12, 0.88, 1.14, 0.59, 3.36, -0.71, gold, ball)
+	p("Muzzle", 0.77, 0.47, 0.69, 0.59, 3.14, -1.18, brown, ball)
 	for _, side in ipairs({ -1, 1 }) do
-		p("Headphone arm", 0.22, 1.17, 0.24, side * 1.6, 2.59, 0.31, ink)
-		p("Bass ear cup", 0.85, 1.13, 0.88, side * 1.64, 1.98, 0.26, rose, ball)
+		p("Camel ear", 0.28, 0.44, 0.26, 0.59 + side * 0.35, 3.75, -0.66, gold, ball, side * 0.38)
+		p("Work boot", 0.65, 0.47, 1.04, side * 0.55, 0.24, 0.02, brown, ball)
 	end
-	p("Output slot", 2.05, 0.18, 0.12, 0, 0.46, -0.97, ink)
-	face(0, 1.23, -0.98, 0.51, 1.03, -0.07, 0.29, 0.39)
+	face(0.59, 3.47, -1.22, 0.22, 0.47, 0.02, -0.18, 0.14)
 end
 
-cast["Clam McSpam"] = function(p, face, hue)
-	p("Lower shell", 3.34, 0.87, 2.59, 0, 0.49, 0.05, hue, ball)
-	p("Upper shell", 3.65, 0.69, 2.7, 0, 2.22, 0.85, hue, ball).Orientation = Vector3.new(22, 0, 0)
-	for i = -2, 2 do
-		p("Scallop ridge", 0.63, 0.87 - math.abs(i) * 0.12, 1.8, i * 0.64, 2.29, 0.64, hue:Lerp(ivory, 0.34), ball, -i * 0.18)
+cast.banana = function(p, face, hue)
+	p("Banana middle", 1.34, 2.26, 1.19, 0, 1.25, 0, hue, ball)
+	p("Monkey head", 1.62, 1.43, 1.19, 0, 2.53, -0.15, brown, ball)
+	p("Monkey muzzle", 1.02, 0.54, 0.53, 0, 2.23, -0.62, rgb(221, 158, 111), ball)
+	for _, side in ipairs({ -1, 1 }) do
+		p("Ear", 0.51, 0.59, 0.4, side * 0.77, 2.59, -0.17, brown, ball)
+		p("Banana peel", 0.58, 1.65, 0.51, side * 0.67, 1.34, -0.31, hue, ball, side * 0.6)
+		p("Monkey foot", 0.62, 0.3, 0.8, side * 0.44, 0.16, -0.16, brown, ball)
 	end
-	p("Clam mantle", 2.79, 0.48, 2.14, 0, 0.83, 0, ivory, ball)
-	p("Spam tin", 1.32, 1.37, 0.88, 0, 1.45, -0.23, rgb(53, 89, 173))
-	p("Tin lid", 1.4, 0.14, 0.96, 0, 2.15, -0.23, silver, nil, nil, flat)
-	p("Tin label", 1.12, 0.79, 0.08, 0, 1.49, -0.69, gold)
-	face(0, 1.7, -0.79, 0.38, 0.94, 0.02, 0.38, 0.48)
+	p("Banana stem", 0.25, 0.46, 0.3, 0, 0.28, 0.55, brown, ball, 0.43)
+	face(0, 2.67, -0.71, 0.35, 0.74, 0.08, 0.22, 0.38)
 end
 
-cast["Waffle Locksmith"] = function(p, face, hue)
-	p("Pressed waffle", 2.68, 2.42, 0.77, -0.22, 1.64, 0, hue)
-	for _, x in ipairs({ -1.15, -0.53, 0.09, 0.71 }) do
-		for _, y in ipairs({ 0.78, 1.38, 1.98, 2.58 }) do
-			p("Waffle pocket", 0.43, 0.41, 0.08, x, y, -0.4, rgb(159, 90, 42))
+cast.patapim = function(p, face, hue)
+	p("Knotted trunk", 1.83, 2.45, 1.22, 0, 1.94, 0.11, brown, ball)
+	p("Moss canopy", 2.52, 1.26, 1.52, 0, 3.28, 0.14, hue, ball)
+	p("Long nose", 0.47, 0.48, 0.98, 0, 2.47, -0.76, gold, ball)
+	for _, side in ipairs({ -1, 1 }) do
+		p("Branch arm", 0.43, 1.64, 0.47, side * 1.06, 1.67, 0, brown, ball, side * 0.33)
+		p("Moss tuft", 0.98, 0.63, 0.8, side * 0.91, 2.99, -0.25, hue, ball)
+		p("Oversized root foot", 1.03, 0.59, 1.53, side * 0.68, 0.29, -0.45, brown, ball)
+	end
+	face(0, 2.72, -0.54, 0.44, 0.85, -0.08, 0.24, 0.17)
+end
+
+local function cup(p, y, hue)
+	p("Porcelain cup", 1.08, 1.6, 1.45, 0, y, 0, hue, tube, math.pi / 2)
+	p("Cup rim", 0.13, 1.69, 1.53, 0, y + 0.56, 0, ivory, tube, math.pi / 2)
+	p("Coffee", 0.06, 1.46, 1.27, 0, y + 0.64, 0, brown, tube, math.pi / 2)
+	p("Foam swirl", 0.06, 0.61, 0.4, 0.14, y + 0.68, -0.06, ivory, tube, math.pi / 2)
+	for _, side in ipairs({ -1, 1 }) do
+		p("Handle joint", 0.41, 0.17, 0.31, 0.84, y + side * 0.26, 0, hue)
+	end
+	p("Handle grip", 0.19, 0.61, 0.31, 1.08, y, 0, hue)
+end
+
+cast.ballerina = function(p, face, hue)
+	cup(p, 3.07, ivory)
+	p("Bodice", 1.14, 1.18, 0.75, 0, 1.97, 0, hue, ball)
+	p("Tutu hem", 2.59, 0.33, 1.77, 0, 1.23, 0, hue, ball)
+	p("Tutu top", 1.89, 0.42, 1.39, 0, 1.42, 0, hue:Lerp(ivory, 0.44), ball)
+	for _, side in ipairs({ -1, 1 }) do
+		p("Ballet arm", 0.27, 1.13, 0.27, side * 0.82, 2.03 + side * 0.28, 0, ivory, ball, side * -0.85)
+		p("Ballet leg", 0.24, 1.13, 0.3, side * 0.36, 0.69, 0, ivory, ball, side * 0.29)
+		p("Ribbon slipper", 0.34, 0.36, 0.61, side * 0.48, 0.18, -0.1, hue, ball)
+	end
+	face(0, 3.15, -0.72, 0.34, 0.7, 0.03, 0.02, 0.28)
+end
+
+cast.assassino = function(p, face, hue)
+	cup(p, 2.55, hue)
+	p("Ninja tunic", 1.29, 1.24, 0.78, 0, 1.16, 0, ink, ball)
+	p("Headband", 1.58, 0.55, 0.21, 0, 2.66, -0.65, ink)
+	p("Band tails", 0.73, 0.21, 0.17, -1.06, 2.62, -0.49, rose, nil, -0.28)
+	for _, side in ipairs({ -1, 1 }) do
+		p("Split-toe boot", 0.5, 0.52, 0.7, side * 0.44, 0.27, -0.12, hue, ball)
+		p("Sleeve", 0.39, 0.85, 0.42, side * 0.84, 1.54, -0.06, ink, ball, side * 0.58)
+		p("Foam blade", 0.18, 1.22, 0.13, side * 1.19, 1.98, -0.38, silver, nil, side * -0.36)
+		p("Blade hilt", 0.48, 0.15, 0.22, side * 1.02, 1.52, -0.38, gold, nil, side * -0.36)
+	end
+	face(0, 2.7, -0.79, 0.31, 0.68, 0, -0.44, 0.13)
+end
+
+cast.ananasini = function(p, face, hue)
+	p("Pineapple body", 1.86, 2.03, 1.45, 0, 1.33, 0, hue, ball)
+	p("Orangutan head", 1.62, 1.35, 1.27, 0, 2.72, -0.17, rgb(180, 88, 42), ball)
+	p("Face patch", 1.28, 0.96, 0.54, 0, 2.65, -0.66, gold, ball)
+	for _, side in ipairs({ -1, 1 }) do
+		p("Leaf crown", 0.32, 0.87, 0.33, side * 0.32, 3.48, 0, rgb(81, 174, 93), ball, -side * 0.55)
+		p("Long ape arm", 0.55, 1.73, 0.56, side * 1.08, 1.22, 0, brown, ball, side * 0.28)
+		p("Knuckles", 0.68, 0.43, 0.61, side * 1.29, 0.34, -0.1, brown, ball)
+		for row = 0, 2 do
+			p("Pineapple scale", 0.24, 0.27, 0.09, side * (0.29 + row % 2 * 0.16),
+				0.89 + row * 0.34, -0.66, brown, nil, math.pi / 4)
 		end
 	end
-	p("Butter forelock", 0.87, 0.27, 0.63, -0.31, 2.92, -0.16, gold, nil, 0.2)
-	p("Key loop", 0.87, 0.8, 0.28, 1.56, 2.2, -0.08, silver, ball)
-	p("Key loop inset", 0.45, 0.4, 0.12, 1.56, 2.2, -0.24, ink, ball)
+	face(0, 2.77, -0.91, 0.33, 0.69, -0.045, 0.2, 0.35)
+end
+
+cast.tralalero = function(p, face, hue)
+	p("Shark body", 1.79, 1.52, 3.18, 0, 1.54, 0.17, hue, ball)
+	p("Pale belly", 1.57, 0.77, 2.82, 0, 1.25, 0.07, ivory, ball)
+	p("Snout", 1.7, 0.92, 1.25, 0, 1.56, -1.22, hue, ball)
+	p("Dorsal fin", 0.29, 1.05, 0.76, 0, 2.5, 0.15, hue, ball).Orientation = Vector3.new(-22, 0, 0)
+	p("Tail fin", 0.36, 1.37, 0.8, 0, 1.72, 1.64, hue, ball).Orientation = Vector3.new(26, 0, 0)
 	for _, side in ipairs({ -1, 1 }) do
-		local x = 1.56 + side * 0.22
-		p("Key shaft", 0.2, 1.11, 0.17, x, 1.45, -0.1, gold, nil, side * 0.26)
-		p("Key tooth", 0.28, 0.18, 0.17, x + side * 0.11, 1.04, -0.1, gold)
+		p("Side fin", 1.01, 0.25, 0.82, side * 0.91, 1.49, 0.09, hue, ball, side * -0.36)
 	end
-	face(-0.22, 2.22, -0.49, 0.46, 1, 0.1, -0.22, 0.22)
-end
-
-cast["Lava Lamp Lawyer"] = function(p, face, hue)
-	p("Lamp foot", 0.39, 1.86, 1.53, 0, 0.26, 0, ink, tube, math.pi / 2)
-	p("Jacket", 1.83, 1.19, 1.46, 0, 0.97, 0, ink, ball)
-	p("Shirtfront", 0.83, 0.85, 0.15, 0, 1.05, -0.68, ivory)
-	p("Lawyer tie", 0.19, 0.65, 0.13, 0, 1.04, -0.79, rose)
-	local globe = p("Glass lamp", 1.47, 2.85, 1.42, 0, 2.02, 0, hue, ball, nil, Enum.Material.Glass)
-	globe.Transparency = 0.38
-	p("Lava droplet", 0.99, 1.07, 0.78, -0.16, 2.66, 0, hue, ball, 0.33, neon)
-	p("Lava bubble", 0.41, 0.5, 0.41, 0.26, 1.85, 0, rose, ball, nil, neon)
-	p("Lamp cap", 0.42, 0.91, 0.88, 0, 3.45, 0, ink, tube, math.pi / 2)
-	p("Briefcase handle", 0.55, 0.4, 0.18, 1.43, 1.32, 0.08, silver)
-	p("Briefcase", 1.27, 0.94, 0.52, 1.43, 0.86, 0.08, rgb(134, 72, 39))
-	face(0, 2.43, -0.76, 0.39, 0.91, -0.1, -0.42, 0.16)
-end
-
-cast["Microwave Mayor"] = function(p, face, hue)
-	p("Microwave cabinet", 3.23, 1.94, 1.59, 0, 1.37, 0, hue)
-	p("Oven window", 2.16, 1.41, 0.16, -0.38, 1.42, -0.83, ink)
-	p("Window reflection", 0.13, 1.28, 0.08, -1.15, 1.4, -0.94, silver, nil, -0.32)
-	p("Door handle", 0.15, 1, 0.2, 0.79, 1.41, -0.91, silver, ball)
-	for y = 1.15, 1.85, 0.35 do
-		p("Control button", 0.33, 0.13, 0.08, 1.22, y, -0.83, ivory)
+	for _, offset in ipairs({ Vector3.new(-0.66, 0, -0.56), Vector3.new(0.66, 0, -0.56), Vector3.new(0, 0, 0.97) }) do
+		local x, z = offset.X, offset.Z
+		p("Shark leg", 0.4, 0.91, 0.45, x, 0.69, z, hue, ball)
+		p("Sneaker sole", 0.68, 0.2, 1.01, x, 0.13, z - 0.15, ivory, ball)
+		p("Blue sneaker", 0.64, 0.39, 0.98, x, 0.34, z - 0.15, rgb(52, 102, 223), ball)
+		p("Laces", 0.38, 0.06, 0.24, x, 0.52, z - 0.3, ivory)
 	end
-	p("Mayoral sash", 2.47, 0.42, 0.15, -0.19, 1.07, -1.03, rose, nil, 0.31)
-	p("Sash medal", 0.52, 0.52, 0.19, 0.52, 1.31, -1.14, gold, ball)
-	face(-0.34, 1.81, -1, 0.48, 0.97, 0.03, 0.21, 0.3)
+	face(0, 1.75, -1.78, 0.38, 0.68, 0.07, -0.12, 0.24)
 end
 
-cast["Disco Dumpster"] = function(p, face, hue)
-	p("Dumpster bin", 2.96, 1.64, 1.6, 0, 1.15, 0, hue)
-	p("Open ribbed lid", 3.18, 0.25, 1.87, 0, 2.35, 0.56, ink).Orientation = Vector3.new(-34, 0, 0)
+cast.bombardiro = function(p, face, hue)
+	p("Aircraft fuselage", 1.04, 1.1, 2.78, 0, 1.65, 0.54, silver, ball)
+	p("Tail stabilizer", 1.56, 0.16, 0.57, 0, 1.98, 1.62, hue)
+	p("Tail fin", 0.19, 0.78, 0.68, 0, 2.4, 1.56, hue, ball)
+	p("Crocodile head", 1.33, 0.95, 1.4, 0, 1.84, -0.56, hue, ball)
+	p("Long snout", 1.12, 0.47, 1.36, 0, 1.59, -1.25, hue, ball)
+	p("Lower jaw", 1, 0.22, 1.18, 0, 1.36, -1.22, gold, ball)
 	for _, side in ipairs({ -1, 1 }) do
-		p("Caster wheel", 0.31, 0.66, 0.66, side * 1.18, 0.39, 0.05, ink, tube)
-		p("Lift pocket", 0.43, 0.61, 1.11, side * 1.52, 1.47, 0.03, silver)
+		p("Wing", 1.76, 0.16, 0.93, side * 1.06, 1.71, 0.4, silver).Orientation = Vector3.new(0, side * -16, 0)
+		p("Engine nacelle", 0.48, 0.46, 0.84, side * 1.15, 1.55, 0.16, hue, ball)
+		p("Propeller", 0.91, 0.12, 0.09, side * 1.15, 1.54, -0.29, ink, nil, side * 0.58)
+		p("Tooth", 0.14, 0.22, 0.16, side * 0.4, 1.47, -1.62, ivory, ball)
 	end
-	p("Mirror ball", 1.48, 1.48, 1.48, 0, 2.78, -0.31, silver, ball, nil, flat)
-	for i = -1, 1 do
-		for j = -1, 1 do
-			p("Mirror tile", 0.29, 0.29, 0.1, i * 0.36, 2.78 + j * 0.36,
-				-1.06 + (math.abs(i) + math.abs(j)) * 0.09, (i + j) % 2 == 0 and ivory or hue, nil, 0.16, neon)
-		end
-	end
-	p("Reflective bumper", 2.74, 0.18, 0.11, 0, 0.6, -0.84, gold, nil, nil, neon)
-	face(0, 1.51, -0.87, 0.59, 1.13, 0.13, 0.32, 0.36)
+	face(0, 2.05, -1.08, 0.33, 0.62, 0.05, -0.33, 0.15)
 end
 
-cast["Moon Mozzarella"] = function(p, face, hue)
-	p("Space suit", 1.72, 1.03, 1.16, 0, 0.85, 0, ivory, ball)
-	p("Oxygen pack", 1.03, 1.11, 0.6, 0, 0.96, 0.69, silver)
+cast.saturnita = function(p, face, hue)
+	p("Planet body", 2.09, 1.94, 1.84, 0, 1.69, 0.15, hue, ball)
+	for i = 1, 20 do
+		local angle = i * math.pi / 10
+		p("Saturn ring", 0.55, 0.16, 0.51, math.cos(angle) * 1.61,
+			1.76 + math.cos(angle) * 0.33, math.sin(angle) * 1.38 + 0.15, gold, ball)
+	end
+	p("Cow head", 1.47, 1.18, 1.02, 0, 2.73, -0.52, ivory, ball)
+	p("Pink muzzle", 1.12, 0.52, 0.53, 0, 2.45, -1, rose, ball)
+	p("Cow patch", 0.73, 0.46, 0.24, -0.44, 1.33, -0.57, ink, ball, 0.36)
 	for _, side in ipairs({ -1, 1 }) do
-		p("Moon boot", 0.7, 0.59, 0.88, side * 0.62, 0.32, -0.03, ivory, ball)
-		p("Helmet hinge", 0.48, 0.62, 0.65, side * 1.02, 2.17, 0, silver, ball)
+		p("Cow ear", 0.62, 0.31, 0.4, side * 0.77, 2.9, -0.44, ink, ball, side * 0.34)
+		p("Horn", 0.26, 0.54, 0.26, side * 0.43, 3.32, -0.39, gold, ball, -side * 0.32)
+		p("Hoof", 0.48, 0.67, 0.54, side * 0.53, 0.34, -0.09, ink, ball)
 	end
-	p("Cheese moon", 1.91, 1.78, 1.65, 0, 2.15, 0, hue, ball)
-	p("Cheese crater", 0.46, 0.33, 0.16, 0.39, 2.72, -0.49, hue:Lerp(ink, 0.27), ball)
-	p("Cheese crater", 0.33, 0.26, 0.16, -0.63, 1.91, -0.51, hue:Lerp(ink, 0.27), ball)
-	face(0, 2.21, -0.8, 0.43, 0.98, -0.1, 0.34, 0.34)
-	p("Bubble helmet", 2.65, 2.45, 2.45, 0, 2.19, 0, rgb(170, 232, 255), ball, nil, Enum.Material.Glass).Transparency = 0.78
-	p("Suit collar", 0.28, 1.99, 1.77, 0, 1.19, 0, silver, tube, math.pi / 2)
+	face(0, 2.85, -1.04, 0.35, 0.67, 0.025, 0.04, 0.19)
 end
 
-cast["Soup Singularity"] = function(p, face, hue)
-	p("Ceramic bowl", 3.27, 1.28, 2.85, 0, 0.91, 0, hue, ball)
-	p("Bowl rim", 0.24, 3.32, 2.88, 0, 1.46, 0, ivory, tube, math.pi / 2)
-	p("Soup surface", 0.075, 2.98, 2.58, 0, 1.6, 0, rgb(245, 128, 51), tube, math.pi / 2)
-	for i = 0, 11 do
-		local angle = i * 0.57
-		local radius = 1.22 - i * 0.095
-		p("Cream spiral", 0.32, 0.055, 0.3, math.cos(angle) * radius, 1.65,
-			math.sin(angle) * radius * 0.86, gold, ball)
-	end
-	p("Spoon handle", 0.19, 1.59, 0.17, 1.15, 2.18, 0.31, silver, nil, -0.45, flat)
-	p("Spoon scoop", 0.79, 1.03, 0.35, 1.6, 3.1, 0.31, silver, ball, -0.45, flat)
-	face(0, 1.09, -1.4, 0.56, 1.01, 0, 0.42, 0.47)
-end
+local function addLabel(pivot, unit, caption)
+	local board = Instance.new("BillboardGui")
+	board.Name = "Brainrot label"
+	board.Size = UDim2.fromOffset(186, 79)
+	board.StudsOffsetWorldSpace = Vector3.new(0, 4.25, 0)
+	board.MaxDistance = 38
+	board.AlwaysOnTop = true
+	board.Parent = pivot
+	local stack = Instance.new("Frame")
+	stack.Name = "Stack"
+	stack.Size = UDim2.fromScale(1, 1)
+	stack.BackgroundTransparency = 1
+	stack.Parent = board
 
-cast["Cosmic Coupon"] = function(p, face, hue)
-	p("Ticket card", 2.61, 2.02, 0.35, 0, 1.94, 0, hue, nil, -0.12)
-	p("Coupon face panel", 2.14, 1.53, 0.08, 0, 1.94, -0.2, hue:Lerp(ivory, 0.48), nil, -0.12)
-	local plum = rgb(85, 52, 136)
-	p("Trailing cloak", 3.69, 2.65, 0.57, 0, 1.39, 0.51, plum, ball)
-	for _, side in ipairs({ -1, 1 }) do
-		p("Cloak lapel", 0.42, 1.92, 0.38, side * 1.25, 1.71, 0.1, plum, nil, side * 0.25)
-		for i = 0, 2 do
-			p("Ticket perforation", 0.16, 0.16, 0.07, side * 1.17, 1.36 + i * 0.44, -0.22, ivory, ball)
-		end
+	local function line(text, color, y, height, size)
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.new(1, 0, 0, height)
+		label.Position = UDim2.fromOffset(0, y)
+		label.BackgroundTransparency = 1
+		label.Text = text
+		label.TextColor3 = color
+		label.TextSize = size
+		label.Font = Enum.Font.GothamBold
+		local outline = Instance.new("UIStroke")
+		outline.Color = black
+		outline.Thickness = 1.6
+		outline.Parent = label
+		label.Parent = stack
+		return label
 	end
-	for i = -2, 2 do
-		p("Barcode stripe", i % 2 == 0 and 0.08 or 0.04, 0.3, 0.07, i * 0.15, 1.43, -0.26, ink)
+
+	if unit.mutation ~= "" then
+		line(unit.mutation, unit.mutation == "Gold" and gold or rgb(176, 245, 255), 0, 14, 12)
 	end
-	p("Star clasp", 0.34, 0.34, 0.13, 0.92, 2.57, -0.27, gold, nil, math.pi / 4)
-	p("Floating star", 0.69, 0.69, 0.27, -0.89, 3.45, 0.09, gold, nil, math.pi / 4, neon)
-	face(0, 2.25, -0.33, 0.5, 1.04, -0.08, -0.3, 0.21)
+	local name = line(unit.entry[1], ivory, 14, 20, 16)
+	name.TextScaled = true
+	local nameSize = Instance.new("UITextSizeConstraint")
+	nameSize.MaxTextSize = 16
+	nameSize.Parent = name
+	line(unit.rarity.name, unit.rarity.color, 34, 15, 13)
+	line(string.format("+$%d/s", unit.rate), green, 49, 15, 13)
+	line(caption, caption:sub(1, 1) == "$" and green or ivory, 64, 15, 13)
 end
 
 function Models.sculpt(parent, unit, pose, caption)
@@ -252,7 +301,7 @@ function Models.sculpt(parent, unit, pose, caption)
 	local pivot = piece("Interaction anchor", 0.25, 0.25, 0.25, 0, 2.05, 0, ink)
 	pivot.Transparency = 1
 	model.PrimaryPart = pivot
-	cast[unit.entry[1]](piece, face, hue)
+	cast[unit.entry[5]](piece, face, hue)
 	if mutation ~= "" then
 		local shine = diamond and rgb(176, 245, 255) or rgb(255, 220, 112)
 		for _, side in ipairs({ -1, 1 }) do
@@ -263,9 +312,7 @@ function Models.sculpt(parent, unit, pose, caption)
 	end
 
 	if caption then
-		local rank = mutation == "" and unit.rarity.name or mutation .. " " .. unit.rarity.name
-		local text = string.format("%s\n%s  •  +$%d/s\n%s", unit.entry[1], rank, unit.rate, caption)
-		World.sign(pivot, text, unit.rarity.color, 250, 66, Vector3.new(0, 2.55, 0), 46)
+		addLabel(pivot, unit, caption)
 	end
 	model:PivotTo(pose * CFrame.new(0, 2.05, 0))
 	model.Parent = parent

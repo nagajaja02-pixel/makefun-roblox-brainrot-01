@@ -20,14 +20,16 @@ function Conveyor.new(map, states, notify)
 end
 
 function Conveyor:spawnOffer(x, unit)
-	local model = Models.sculpt(self.map, unit, CFrame.new(x, pivotHeight, 0), string.format("BUY  $%d", unit.price))
+	local model = Models.sculpt(self.map, unit, CFrame.new(x, pivotHeight, 0), string.format("$%d", unit.price))
 	local label = model.PrimaryPart:FindFirstChildOfClass("BillboardGui")
 	label.AlwaysOnTop = false
+	label:AddTag("ConveyorBrainrotLabel")
 	local offer = { model = model, x = x }
 	local visible = x > World.importCurtain and x < World.receiverCurtain
 	label.Enabled = visible
 	self.offers[offer] = true
 	local prompt = World.prompt(model.PrimaryPart, "Buy  $" .. unit.price, unit.entry[1])
+	prompt.Style = Enum.ProximityPromptStyle.Custom
 	offer.prompt = prompt
 	offer.label = label
 	prompt.Enabled = visible

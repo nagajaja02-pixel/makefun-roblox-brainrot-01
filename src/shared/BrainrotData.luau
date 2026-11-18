@@ -10,19 +10,19 @@ Data.rarities = {
 
 -- Name, tier, price, income, silhouette, body color, caption.
 Data.cast = {
-	{ "Burrito Bailiff", 1, 40, 4, "wrap", Color3.fromRGB(235, 167, 88), "Charged with contempt of lunch." },
-	{ "Toaster Intern", 1, 65, 7, "toast", Color3.fromRGB(242, 104, 107), "Burned through the onboarding." },
-	{ "Puddle Auditor", 1, 90, 10, "blob", Color3.fromRGB(71, 182, 230), "Found a liquidity problem." },
-	{ "Pickle Pilot", 2, 190, 22, "wrap", Color3.fromRGB(129, 217, 89), "Authorized for dill takeoff." },
-	{ "Fax Machine DJ", 2, 330, 39, "toast", Color3.fromRGB(108, 148, 242), "Dropping a paper jam." },
-	{ "Clam McSpam", 2, 490, 58, "blob", Color3.fromRGB(247, 152, 185), "You have 900 unread clams." },
-	{ "Waffle Locksmith", 3, 850, 103, "toast", Color3.fromRGB(238, 167, 83), "Every key is syrup-coated." },
-	{ "Lava Lamp Lawyer", 3, 1350, 170, "lamp", Color3.fromRGB(224, 89, 192), "Objects in slow motion." },
-	{ "Microwave Mayor", 3, 2100, 275, "toast", Color3.fromRGB(99, 213, 207), "Reheating the economy." },
-	{ "Disco Dumpster", 4, 3700, 510, "toast", Color3.fromRGB(182, 121, 241), "Trash night is every night." },
-	{ "Moon Mozzarella", 4, 5600, 820, "blob", Color3.fromRGB(248, 211, 126), "One small dip for cheese." },
-	{ "Soup Singularity", 5, 9500, 1550, "lamp", Color3.fromRGB(134, 116, 255), "Even spoons cannot escape." },
-	{ "Cosmic Coupon", 5, 14500, 2500, "wrap", Color3.fromRGB(255, 128, 163), "Expires before time begins." },
+	{ "Tung Tung Tung Sahur", 1, 40, 4, "sahur", Color3.fromRGB(176, 105, 56), "Midnight drummer" },
+	{ "Boneca Ambalabu", 1, 65, 7, "boneca", Color3.fromRGB(103, 204, 99), "One-wheel frog" },
+	{ "Trippi Troppi", 1, 90, 10, "trippi", Color3.fromRGB(243, 139, 99), "Shrimp-tail cat" },
+	{ "Lirili Larila", 2, 190, 22, "lirili", Color3.fromRGB(82, 171, 114), "Desert explorer" },
+	{ "Frigo Camelo", 2, 330, 39, "frigo", Color3.fromRGB(174, 221, 233), "Cold cargo" },
+	{ "Chimpanzini Bananini", 2, 490, 58, "banana", Color3.fromRGB(246, 196, 59), "Banana bunch" },
+	{ "Brr Brr Patapim", 3, 850, 103, "patapim", Color3.fromRGB(98, 151, 67), "Forest wanderer" },
+	{ "Ballerina Cappuccina", 3, 1350, 170, "ballerina", Color3.fromRGB(243, 129, 168), "Porcelain pirouette" },
+	{ "Cappuccino Assassino", 3, 2100, 275, "assassino", Color3.fromRGB(90, 77, 110), "Silent espresso" },
+	{ "Orangutini Ananasini", 4, 3700, 510, "ananasini", Color3.fromRGB(231, 157, 51), "Pineapple crown" },
+	{ "Tralalero Tralala", 4, 5600, 820, "tralalero", Color3.fromRGB(80, 158, 197), "Three fresh kicks" },
+	{ "Bombardiro Crocodilo", 5, 9500, 1550, "bombardiro", Color3.fromRGB(106, 141, 115), "Crocodile airframe" },
+	{ "La Vaca Saturno Saturnita", 5, 14500, 2500, "saturnita", Color3.fromRGB(170, 134, 221), "Orbital cow" },
 }
 
 function Data.create(index, allowMutation)
