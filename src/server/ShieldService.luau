@@ -5,10 +5,13 @@ local activeDuration = 26
 local cooldown = 48
 local cyan = Color3.fromRGB(36, 232, 255)
 
-function Shield.build(frame, width, depth)
+function Shield.build(frame, cornerX, cornerZ, pierWidth, floor, top)
 	local visual = Instance.new("Folder")
 	visual.Name = "Shield lasers"
-	local height = 7.4
+	local beamWidth = 0.26
+	local height = top - beamWidth / 2 - floor
+	local centerY = floor + height / 2
+	local spanX, spanZ = 2 * cornerX - pierWidth, 2 * cornerZ - pierWidth
 	local function laser(name, sx, sy, sz, x, y, z, transparency)
 		local part = World.part(visual, name, Vector3.new(sx, sy, sz),
 			frame * CFrame.new(x, y, z), cyan, Enum.Material.Neon)
@@ -20,16 +23,17 @@ function Shield.build(frame, width, depth)
 	end
 
 	for _, side in ipairs({ -1, 1 }) do
-		local x, z = side * (width / 2 + 0.1), side * (depth / 2 + 0.1)
-		laser("Shield side", 0.1, height, depth, x, height / 2, 0, 0.92)
-		laser("Shield end", width, height, 0.1, 0, height / 2, z, 0.92)
-		laser("Shield side beam", 0.26, 0.26, depth + 0.4, x, height, 0, 0.12)
-		laser("Shield end beam", width + 0.4, 0.26, 0.26, 0, height, z, 0.12)
-		for along = -depth / 2, depth / 2, 4 do
-			laser("Shield side bar", 0.21, height, 0.21, x, height / 2, along, 0.22)
+		local x, z = side * cornerX, side * cornerZ
+		laser("Shield side", 0.1, height, spanZ, x, centerY, 0, 0.92)
+		laser("Shield end", spanX, height, 0.1, 0, centerY, z, 0.92)
+		laser("Shield side beam", beamWidth, beamWidth, spanZ, x, top, 0, 0.12)
+		laser("Shield end beam", spanX, beamWidth, beamWidth, 0, top, z, 0.12)
+		-- Bars extend into the top beam so their end faces are separate from the pane edges.
+		for along = -16, 16, 4 do
+			laser("Shield side bar", 0.21, height + 0.06, 0.21, x, centerY + 0.07, along, 0.22)
 		end
-		for along = -width / 2 + 3, width / 2 - 3, 4 do
-			laser("Shield end bar", 0.21, height, 0.21, along, height / 2, z, 0.22)
+		for along = -10, 10, 4 do
+			laser("Shield end bar", 0.21, height + 0.06, 0.21, along, centerY + 0.07, z, 0.22)
 		end
 	end
 	return visual

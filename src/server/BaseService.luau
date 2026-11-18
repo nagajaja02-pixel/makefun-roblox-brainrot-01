@@ -9,6 +9,10 @@ Base.startingCash = 150
 
 local width, depth = 26, 40
 local halfWidth, halfDepth = width / 2, depth / 2
+local cornerWidth = 1.2
+local shieldX, shieldZ = halfWidth - cornerWidth / 2, halfDepth - cornerWidth / 2
+local shieldTop = 8
+local deckTop = 0.4
 
 local plotColors = {
 	Color3.fromRGB(27, 192, 190), Color3.fromRGB(250, 115, 93), Color3.fromRGB(85, 144, 247),
@@ -29,41 +33,42 @@ function Base.build(map)
 			local plot = #bases + 1
 			local accent = plotColors[plot]
 			local pale = accent:Lerp(World.white, 0.78)
-			part("Shelter deck", Vector3.new(width, 0.4, depth), 0, 0.2, 0, pale, Enum.Material.SmoothPlastic)
-			part("Back wall", Vector3.new(width, 7, 0.65), 0, 3.5, halfDepth - 0.5, pale)
-			local function trim(name, sx, sy, sz, lx, ly, lz, color, material)
+			local panel = accent:Lerp(World.ink, 0.24)
+			local neon = Enum.Material.Neon
+			local function detail(name, sx, sy, sz, lx, ly, lz, color, material)
 				local item = part(name, Vector3.new(sx, sy, sz), lx, ly, lz, color, material)
 				item.CanCollide = false
 				item.CanTouch = false
 				item.CanQuery = false
 				return item
 			end
+
+			part("Shelter deck", Vector3.new(width, deckTop, depth), 0, deckTop / 2, 0, pale, flat)
+			-- Opaque barriers are their own colliders. The display bays between them are open.
+			part("Rear service wall", Vector3.new(18, 10, cornerWidth), 0, 5.4, shieldZ, panel, flat)
 			for _, side in ipairs({ -1, 1 }) do
-				part("Shelter column", Vector3.new(1, 8, 1), side * (halfWidth - 0.5), 4, -halfDepth + 1, World.steel)
-				trim("Side cladding", 0.38, 7.45, depth - 1, side * (halfWidth - 0.5), 4.125, 0, accent, flat)
-				trim("Side transom", 0.55, 0.45, depth - 2, side * (halfWidth - 0.5), 7.65, 0, accent, flat)
-				for _, zBay in ipairs({ -14, -4.7, 4.7, 14 }) do
-					trim("Side window", 0.55, 3.35, 8.5, side * (halfWidth - 0.5), 5.62, zBay, pale, flat)
-					trim("Side mullion", 0.65, 4.1, 0.45, side * (halfWidth - 0.5), 5.75, zBay + 4.4, accent, flat)
+				for _, endSide in ipairs({ -1, 1 }) do
+					part("Shield corner pier", Vector3.new(cornerWidth, 9.2, cornerWidth),
+						side * shieldX, 5, endSide * shieldZ, World.ink, flat)
 				end
-				trim("Entry floor stripe", 0.26, 0.04, depth - 4, side * 4.75, 0.42, 0, accent)
-				trim("Interior light", 0.5, 0.18, depth - 7, side * 8, 7.65, 1, World.white, Enum.Material.Neon)
+				part("Side wind baffle", Vector3.new(cornerWidth, 8.5, 2.4),
+					side * shieldX, 4.65, -0.5, panel, flat)
+				detail("Canopy wing", 8, 0.7, depth - 2 * cornerWidth, side * 8.6, 9.25, 0, accent)
+				detail("Canopy edge light", 0.22, 0.12, 34, side * 5, 8.84, 0, pale, neon)
+				detail("Aisle guide", 0.18, 0.03, 35, side * 4.7, 0.415, -0.5, panel)
 			end
-			for lx = -9, 9, 6 do
-				trim("Back wall rib", 0.28, 6.7, 0.24, lx, 3.9, halfDepth - 0.9, pale, flat)
-			end
-			trim("Shelter roof", width + 1, 0.65, depth - 1, 0, 8.35, 0.5, accent, flat)
-			trim("Roof raised center", width - 6, 0.55, depth - 5, 0, 8.85, 0.5, accent:Lerp(World.white, 0.3), flat)
-			local fascia = trim("Safehouse nameboard", 22, 1.65, 0.65, 0, 8.85, -halfDepth + 0.25, World.ink)
+			detail("Raised service canopy", 18, 0.65, 6, 0, 10.725, 17, accent)
+			local fascia = detail("Safehouse nameboard", width - 2 * cornerWidth, 1.25, 0.9,
+				0, 8.925, -shieldZ, World.ink)
 			World.surfaceSign(fascia, string.format("SAFEHOUSE  %02d", plot), World.white)
-			local gate = part("Shield status", Vector3.new(width, 0.42, 0.7), 0, 7.7, -halfDepth + 0.5, World.aqua, Enum.Material.Neon)
+			local gate = detail("Shield status", 4, 0.18, 0.14, 0, 8.39, -shieldZ - 0.53, World.aqua, neon)
 			local title = World.sign(gate, "AVAILABLE SAFEHOUSE", World.white, 255, 34, Vector3.new(0, 2.8, 0))
-			local drop = part("Drop zone", Vector3.new(9, 0.19, 6), 0, 0.5, -14, World.aqua, Enum.Material.Neon)
+			local drop = detail("Drop zone", 9, 0.03, 6, 0, 0.415, -14, World.aqua, neon)
 			World.sign(drop, "DELIVERY  /  WAVE SHELTER", World.aqua, 235, 27, Vector3.new(0, 0.85, 0), 33)
 			local controls = {}
 			for index, titleText in ipairs({ "SHIELD", "EXPAND BASE" }) do
 				local color = index == 1 and World.aqua or World.gold
-				local terminal = part(titleText, Vector3.new(3.2, 1.25, 2.5), (index - 1.5) * 6, 1.02, 16.5, color)
+				local terminal = part(titleText, Vector3.new(3.2, 1.24, 2.5), (index - 1.5) * 6, 1.02, 16.5, color)
 				World.sign(terminal, titleText, color, 115, 23, Vector3.new(0, 1.4, 0), 23)
 				controls[index] = terminal
 			end
@@ -72,15 +77,15 @@ function Base.build(map)
 				local side = index % 2 == 1 and -1 or 1
 				local column = 8
 				local row = -11 + math.floor((index - 1) / 2) * 7
-				local stand = part("Income stand " .. index, Vector3.new(5.2, 0.55, 4), side * column, 0.67, row, World.steel)
-				trim("Display pedestal", 5.4, 0.2, 4.2, side * column, 0.5, row, accent, flat)
-				trim("Display front trim", 4.5, 0.12, 0.08, side * column, 0.74, row - 2.02, pale, Enum.Material.Neon)
+				local stand = part("Income stand " .. index, Vector3.new(5.2, 0.54, 4), side * column, 0.67, row, World.steel)
+				detail("Display apron", 5.2, 0.26, 0.26, side * column, 0.53, row - 2.13, panel)
+				detail("Display light", 4.2, 0.08, 0.08, side * column, 0.56, row - 2.3, pale, neon)
 				stands[index] = stand
 			end
 			table.insert(bases, {
 				frame = frame, gate = gate, title = title, stands = stands, controls = controls, model = model,
 				entrance = (frame * CFrame.new(0, 0, -halfDepth + 4)).Position,
-				shieldVisual = Shield.build(frame, width, depth),
+				shieldVisual = Shield.build(frame, shieldX, shieldZ, cornerWidth, deckTop + 0.02, shieldTop),
 			})
 		end
 	end
