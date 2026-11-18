@@ -5,7 +5,7 @@ local Merchant = {}
 
 function Merchant.build(map, states, notify)
 	local shop = Instance.new("Model")
-	shop.Name = "Warung Brainrot"
+	shop.Name = "Brainrot Shop"
 	local frame = CFrame.new(41, 0, -16) * CFrame.Angles(0, math.pi, 0)
 	local red = Color3.fromRGB(243, 90, 82)
 	local cream = Color3.fromRGB(255, 231, 177)
@@ -28,7 +28,7 @@ function Merchant.build(map, states, notify)
 	part(shop, "Counter base", Vector3.new(10, 2.2, 1.5), 0, 1.38, -2.8, green)
 	local counter = part(shop, "Counter", Vector3.new(10.5, 0.3, 1.9), 0, 2.62, -2.8, cream)
 	local sign = part(shop, "Fascia", Vector3.new(10.2, 1.55, 0.3), 0, 7.35, -4.95, World.ink)
-	World.surfaceSign(sign, "WARUNG BRAINROT", World.gold)
+	World.surfaceSign(sign, "BRAINROT SHOP", World.gold)
 
 	local npc = Instance.new("Model")
 	npc.Name = "Merchant"

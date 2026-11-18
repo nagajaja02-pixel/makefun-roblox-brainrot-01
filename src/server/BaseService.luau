@@ -116,17 +116,22 @@ function Base.parkUnit(state, index, slot, onRaid)
 			part.CanQuery = true
 		end
 	end
-	local click = Instance.new("ClickDetector")
-	click.MaxActivationDistance = 10
-	click.Parent = slot.model
-	click.MouseClick:Connect(function(player)
+	local pickup = World.prompt(slot.model.PrimaryPart, "Pick Up", slot.unit.entry[1], 0)
+	pickup.ClickablePrompt = false
+	pickup:SetAttribute("OwnerUserId", state.player.UserId)
+	pickup:SetAttribute("OwnerOnly", true)
+	pickup:AddTag("StandPrompt")
+	pickup.Triggered:Connect(function(player)
 		if player == state.player then
 			onRaid(player, state, index, slot)
 		end
 	end)
-	local prompt = World.prompt(slot.model.PrimaryPart, "Raid", slot.unit.entry[1], 1.25)
-	prompt:SetAttribute("HideForUserId", state.player.UserId)
-	prompt.Triggered:Connect(function(player)
+
+	local raid = World.prompt(slot.model.PrimaryPart, "Raid", slot.unit.entry[1], 1.25)
+	raid:SetAttribute("OwnerUserId", state.player.UserId)
+	raid:SetAttribute("OwnerOnly", false)
+	raid:AddTag("StandPrompt")
+	raid.Triggered:Connect(function(player)
 		if player ~= state.player then
 			onRaid(player, state, index, slot)
 		end

@@ -6,7 +6,9 @@ local RunService = game:GetService("RunService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local TweenService = game:GetService("TweenService")
 
+local CarryPose = require(script.Parent.CarryPose)
 local Menu = require(script.Parent.Menu)
+CarryPose.start(Players, RunService)
 local player = Players.LocalPlayer
 local ui = Instance.new("ScreenGui")
 ui.Name = "Brainrot Blitz HUD"
@@ -138,7 +140,7 @@ refreshEconomy()
 
 task.spawn(function()
 	local harbor = workspace:WaitForChild("Blitz Harbor")
-	local shop = harbor:WaitForChild("Warung Brainrot")
+	local shop = harbor:WaitForChild("Brainrot Shop")
 	local prompt = shop:WaitForChild("Counter"):WaitForChild("SellBrainrot")
 	local function refreshSellPrompt()
 		local cargo = player:GetAttribute("Carrying")
@@ -174,13 +176,19 @@ end
 player:GetAttributeChangedSignal("Home"):Connect(markHome)
 markHome()
 
+local function filterStandPrompt(prompt)
+	local isOwner = prompt:GetAttribute("OwnerUserId") == player.UserId
+	prompt.Enabled = isOwner == prompt:GetAttribute("OwnerOnly")
+end
+
+CollectionService:GetInstanceAddedSignal("StandPrompt"):Connect(filterStandPrompt)
+for _, prompt in ipairs(CollectionService:GetTagged("StandPrompt")) do
+	filterStandPrompt(prompt)
+end
+
 local buyPrompts = {}
 
 ProximityPromptService.PromptShown:Connect(function(prompt, inputType)
-	if prompt:GetAttribute("HideForUserId") == player.UserId then
-		prompt.Enabled = false
-		return
-	end
 	if prompt.Style ~= Enum.ProximityPromptStyle.Custom or buyPrompts[prompt] then
 		return
 	end

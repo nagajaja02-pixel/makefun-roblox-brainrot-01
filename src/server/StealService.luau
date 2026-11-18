@@ -11,25 +11,6 @@ local function weld(parent, part0, part1)
 	joint.Parent = parent
 end
 
-local function raiseArms(character)
-	local shoulders = {}
-	for _, torsoName in ipairs({ "UpperTorso", "Torso" }) do
-		local torso = character:FindFirstChild(torsoName)
-		if torso then
-			for _, joint in ipairs(character:GetDescendants()) do
-				if joint:IsA("Motor6D") and joint.Part0 == torso
-					and (joint.Name == "LeftShoulder" or joint.Name == "RightShoulder"
-						or joint.Name == "Left Shoulder" or joint.Name == "Right Shoulder") then
-					local offset = joint.C0
-					shoulders[joint] = offset
-					joint.C0 = CFrame.new(offset.Position) * CFrame.Angles(math.rad(168), 0, 0) * offset.Rotation
-				end
-			end
-		end
-	end
-	return shoulders
-end
-
 function Steal.startCarry(state, unit, source, sourceIndex)
 	local root = World.aliveRoot(state.player)
 	local model = Models.sculpt(workspace, unit, CFrame.new(), nil)
@@ -48,7 +29,6 @@ function Steal.startCarry(state, unit, source, sourceIndex)
 	local ownPickup = source == state
 	state.carry = {
 		unit = unit, source = source, sourceIndex = sourceIndex, model = model,
-		shoulders = raiseArms(root.Parent),
 		waitForExit = ownPickup and Base.isSheltered(state.base, root.Position),
 	}
 	state.player:SetAttribute("SellPrice", math.floor(unit.price / 2))
@@ -58,9 +38,6 @@ end
 function Steal.clearCarry(state)
 	local carry = state.carry
 	carry.model:Destroy()
-	for joint, offset in pairs(carry.shoulders) do
-		joint.C0 = offset
-	end
 	state.carry = nil
 	state.player:SetAttribute("Carrying", "")
 	state.player:SetAttribute("SellPrice", nil)
