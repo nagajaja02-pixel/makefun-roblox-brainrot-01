@@ -43,6 +43,24 @@ function World.sign(part, text, color, width, height, offset, distance)
 	return label
 end
 
+function World.surfaceSign(part, text, color)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Front
+	gui.CanvasSize = Vector2.new(512, 80)
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
+	gui.LightInfluence = 0.15
+	gui.Parent = part
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(0.94, 0.82)
+	label.Position = UDim2.fromScale(0.03, 0.09)
+	label.BackgroundTransparency = 1
+	label.TextColor3 = color
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBold
+	label.Text = text
+	label.Parent = gui
+end
+
 function World.prompt(part, action, object, duration)
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = action
@@ -66,20 +84,24 @@ function World.near(player, part)
 end
 
 function World.buildHarbor()
-	Lighting.ClockTime = 15.5
-	Lighting.Brightness = 2.5
-	Lighting.Ambient = Color3.fromRGB(112, 126, 153)
+	Lighting.ClockTime = 14
+	Lighting.Brightness = 3
+	Lighting.Ambient = Color3.fromRGB(153, 166, 183)
 	Lighting.OutdoorAmbient = Color3.fromRGB(155, 178, 196)
 	local atmosphere = Instance.new("Atmosphere")
-	atmosphere.Density = 0.23
+	atmosphere.Density = 0.2
 	atmosphere.Color = Color3.fromRGB(186, 222, 248)
 	atmosphere.Decay = Color3.fromRGB(140, 163, 212)
 	atmosphere.Parent = Lighting
+	local clouds = Instance.new("Clouds")
+	clouds.Cover = 0.35
+	clouds.Density = 0.55
+	clouds.Parent = workspace.Terrain
 	local map = Instance.new("Folder")
 	map.Name = "Blitz Harbor"
 	map.Parent = workspace
 	World.part(map, "Ocean", Vector3.new(1300, 8, 1300), CFrame.new(0, -8, 0), Color3.fromRGB(28, 126, 159), Enum.Material.Glass)
-	World.part(map, "Harbor island", Vector3.new(200, 8, 112), CFrame.new(0, -4, 0), World.steel, Enum.Material.Concrete)
+	World.part(map, "Harbor island", Vector3.new(200, 8, 112), CFrame.new(0, -4, 0), Color3.fromRGB(171, 176, 174), Enum.Material.Concrete)
 	local belt = World.part(map, "Conveyor", Vector3.new(179, 0.9, 10), CFrame.new(0, 0.45, 0), World.ink, Enum.Material.Metal)
 	for x = -86, 86, 4 do
 		World.part(map, "Conveyor tread", Vector3.new(0.24, 0.08, 9.6), CFrame.new(x, 0.94, 0), World.steel)
@@ -105,6 +127,94 @@ function World.buildHarbor()
 			World.part(map, "Beacon light", Vector3.new(2.1, 0.45, 2.1), post.CFrame * CFrame.new(0, 3.9, 0), World.gold, Enum.Material.Neon)
 		end
 	end
+	local function detail(name, sx, sy, sz, x, y, z, color, material, angle)
+		local part = World.part(map, name, Vector3.new(sx, sy, sz),
+			CFrame.new(x, y, z) * CFrame.Angles(0, 0, angle or 0), color, material)
+		part.CanCollide = false
+		part.CanTouch = false
+		part.CanQuery = false
+		return part
+	end
+	local teal = Color3.fromRGB(26, 104, 113)
+	local vermilion = Color3.fromRGB(212, 78, 55)
+	local cream = Color3.fromRGB(255, 232, 185)
+	local metal = Enum.Material.Metal
+	local glow = Enum.Material.Neon
+	for _, side in ipairs({ -1, 1 }) do
+		local z = side * 5
+		detail("Conveyor edge rail", 175, 0.28, 0.34, 0, 1.22, z, World.steel, metal)
+		for x = -80, 80, 10 do
+			detail("Belt skirt bracket", 0.6, 1.15, 0.42, x, 0.58, z, World.steel, metal)
+			detail("Amber belt marker", 1.45, 0.13, 0.42, x, 1.4, z, World.gold, glow)
+		end
+		local edge = side * 55
+		detail("Quayside curb", 199, 0.26, 0.85, 0, 0.13, edge, cream, Enum.Material.Concrete)
+		for x = -96, 96, 8 do
+			detail("Quay railing post", 0.24, 2.6, 0.24, x, 1.3, edge, World.steel, metal)
+		end
+		for _, y in ipairs({ 1.1, 2.55 }) do
+			detail("Quay railing", 192, 0.19, 0.23, 0, y, edge, teal, metal)
+		end
+		for _, x in ipairs({ -32, 32 }) do
+			local lane = side * 19
+			detail("Street lamp post", 0.4, 9, 0.4, x, 4.5, lane, World.steel, metal)
+			detail("Street lamp arm", 0.4, 0.4, 3.2, x, 8.85, lane - side, World.steel, metal)
+			detail("Street lamp diffuser", 1, 0.23, 1.2, x, 8.62, lane - side * 2.45, cream, glow)
+		end
+		for x = -75, 75, 25 do
+			detail("Wake stripe", 12, 0.05, 0.45, x, -3.96, side * (67 + math.abs(x) % 12),
+				Color3.fromRGB(109, 207, 221))
+		end
+	end
+
+	-- Backdrop structures stand beyond the original walking and wave bounds.
+	detail("Cargo wharf", 105, 1.8, 33, -47, -1.1, 72, teal, Enum.Material.Concrete)
+	for x = -94, -4, 10 do
+		detail("Wharf piling", 1.8, 7, 1.8, x, -2.8, 86, World.steel, Enum.Material.Wood)
+		detail("Wharf deck seam", 0.2, 0.05, 29, x, -0.18, 72, World.steel)
+	end
+	detail("Customs warehouse", 33, 12, 15, -73, 6, 76, cream, Enum.Material.Concrete)
+	for _, side in ipairs({ -1, 1 }) do
+		detail("Warehouse cladding", 0.42, 11.8, 15.2, -73 + side * 16.4, 6, 76, teal, metal)
+		detail("Warehouse roof", 18, 0.65, 17, -73 + side * 8.5, 13.45, 76, teal, metal, -side * 0.17)
+	end
+	for _, x in ipairs({ -82, -64 }) do
+		detail("Loading door frame", 10.2, 8.5, 0.45, x, 4.25, 68.4, teal, metal)
+		detail("Loading roller door", 8.8, 7.2, 0.48, x, 3.6, 68.15, World.steel, metal)
+		for y = 1, 7 do
+			detail("Door slat", 8.7, 0.12, 0.12, x, y, 67.86, cream, metal)
+		end
+	end
+	local fascia = detail("Customs fascia", 16, 2.5, 0.35, -73, 10, 68.3, teal, metal)
+	World.surfaceSign(fascia, "BLITZ CUSTOMS", World.white)
+
+	for _, cargo in ipairs({
+		{ -46, 3, 74, vermilion }, { -30, 3, 74, teal },
+		{ -38, 9, 74, World.gold }, { -15, 3, 81, Color3.fromRGB(72, 105, 185) },
+	}) do
+		local x, y, z, color = table.unpack(cargo)
+		detail("Freight container", 15.6, 6, 7.4, x, y, z, color, metal)
+		for offset = -7, 7 do
+			detail("Container rib", 0.18, 5.6, 0.22, x + offset, y, z - 3.76, color:Lerp(World.ink, 0.26), metal)
+		end
+		for _, side in ipairs({ -1, 1 }) do
+			detail("Container frame", 15.8, 0.25, 7.55, x, y + side * 2.87, z, color:Lerp(World.white, 0.22), metal)
+		end
+	end
+
+	detail("Crane pedestal", 7, 1.5, 7, -10, 0.55, 67, World.steel, metal)
+	for _, side in ipairs({ -1, 1 }) do
+		detail("Crane tower upright", 0.75, 24, 2, -10 + side * 1.6, 12.8, 67, World.gold, metal)
+	end
+	for y = 3, 23, 4 do
+		detail("Crane lattice", 5.2, 0.32, 1.2, -10, y, 67, World.gold, metal, y % 8 == 3 and 0.78 or -0.78)
+	end
+	detail("Crane boom", 38, 1.6, 2.3, -20, 24.8, 67, World.gold, metal)
+	detail("Crane boom stay", 24, 0.38, 0.55, -20, 27, 67, World.steel, metal, -0.18)
+	detail("Crane operator cab", 4, 3, 3.3, -7, 22, 67, teal, metal)
+	detail("Crane cab window", 3.3, 1.95, 0.15, -7, 22.2, 65.27, Color3.fromRGB(137, 219, 240), Enum.Material.Glass)
+	detail("Crane hoist cable", 0.17, 10, 0.17, -32, 19, 67, World.ink, metal)
+	detail("Crane hook", 1.15, 0.65, 0.7, -32, 13.75, 67, World.gold, metal)
 	return map, belt
 end
 
