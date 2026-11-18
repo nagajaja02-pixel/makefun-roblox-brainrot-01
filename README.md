@@ -31,3 +31,4 @@ Open `game.rbxl` in Roblox Studio and press **Play** to spawn the map and charac
 6. Use **Rebirth** to restart with $150 and an empty collection. Stand upgrades carry over and each rebirth adds 50% to income permanently in the published experience. Studio keeps rebirths for the test session. Cash, crew and stand upgrades are session-local.
 
 Play it live: https://www.roblox.com/games/105239944014039 — Brainrot Blitz - Steal And Tsunami (Public).
+Experience thumbnail: the aerial cover is live and approved on Roblox.
