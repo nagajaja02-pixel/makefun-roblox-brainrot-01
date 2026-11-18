@@ -1,1 +1,228 @@
-print("Hello world, from server!")
+local DataStoreService = game:GetService("DataStoreService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local World = require(script.World)
+local Base = require(script.BaseService)
+local Money = require(script.MoneyService)
+local Steal = require(script.StealService)
+local Wave = require(script.WaveService)
+local Conveyor = require(script.ConveyorService)
+
+local map = World.buildHarbor()
+local bases = Base.build(map)
+local states = {}
+local rebirthStore = not RunService:IsStudio() and DataStoreService:GetDataStore("BlitzRebirthsV1")
+local feedback = Instance.new("RemoteEvent")
+feedback.Name = "BlitzFeedback"
+feedback.Parent = ReplicatedStorage
+
+local function notify(player, text, style)
+	if player.Parent == Players then
+		feedback:FireClient(player, text, style)
+	end
+end
+
+local function raidStand(player, victim, index, slot)
+	Steal.beginRaid(player, victim, index, slot, states, notify)
+end
+
+local function activateShield(state, now)
+	state.lockUntil = now + Base.lockDuration
+	state.lockReady = now + Base.lockCooldown
+	Base.updateShield(state, now)
+end
+
+local function upgradeBase(state)
+	if state.level == 3 then
+		notify(state.player, "All eight stands are open.", "warning")
+		return
+	end
+	if not Money.spend(state, Money.upgradePrice(state)) then
+		notify(state.player, "Save more cash to open two stands.", "warning")
+		return
+	end
+	state.level += 1
+	Base.refreshStands(state)
+	Money.publish(state)
+	notify(state.player, "Base expanded. Two more income stands are open.", "success")
+end
+
+local function rebirthCollection(state)
+	if state.carry then
+		notify(state.player, "Deliver your brainrot before rebirthing.", "warning")
+		return
+	end
+	for _, slot in pairs(state.slots) do
+		if slot.inTransit then
+			notify(state.player, "Wait until the active raid is resolved.", "warning")
+			return
+		end
+	end
+	if state.cash < Money.rebirthPrice(state) then
+		notify(state.player, "Save more cash to rebirth.", "warning")
+		return
+	end
+	local rebirths = state.rebirths + 1
+	if rebirthStore then
+		state.savingRebirth = true
+		local ok, saved = pcall(function()
+			return rebirthStore:UpdateAsync(tostring(state.player.UserId), function(previous)
+				return math.max(tonumber(previous) or 0, rebirths)
+			end)
+		end)
+		state.savingRebirth = false
+		if states[state.player] ~= state then
+			return
+		end
+		if not ok then
+			notify(state.player, "Rebirth save unavailable. Your crew and cash are safe.", "warning")
+			return
+		end
+		rebirths = saved
+	end
+	state.rebirths = rebirths
+	state.cash = Base.startingCash
+	Base.clearCollection(state)
+	Money.publish(state)
+	notify(state.player, "Reborn! Added +50% income.", "success")
+end
+
+for _, base in ipairs(bases) do
+	for index, terminal in ipairs(base.controls) do
+		local action = ({ "Raise 26s shield", "Buy two stands", "Reset cash and crew" })[index]
+		World.prompt(terminal, action, terminal.Name, index == 3 and 1.8 or 0.25).Triggered:Connect(function(player)
+			local state = states[player]
+			if not state or state.savingRebirth or state.base ~= base or not World.near(player, terminal) then
+				return
+			end
+			if index == 1 then
+				local now = workspace:GetServerTimeNow()
+				if now >= state.lockReady then
+					activateShield(state, now)
+					notify(player, "Shield up. Raiders are blocked for 26 seconds.", "success")
+				else
+					notify(player, string.format("Shield ready in %ds.", math.ceil(state.lockReady - now)), "warning")
+				end
+			elseif index == 2 then
+				upgradeBase(state)
+			else
+				rebirthCollection(state)
+			end
+		end)
+	end
+end
+
+local function assignSafehouse(player)
+	if states[player] then
+		return
+	end
+	local base
+	for _, candidate in ipairs(bases) do
+		if not candidate.owner then
+			base = candidate
+			break
+		end
+	end
+	if not base then
+		player:Kick("This harbor has six safehouses. Join another server for a free plot.")
+		return
+	end
+	base.owner = player
+	local state = { player = player, base = base, slots = {}, cash = Base.startingCash, rate = 0, level = 1, rebirths = 0 }
+	states[player] = state
+	player:SetAttribute("Carrying", "")
+	player:SetAttribute("Home", base.frame.Position)
+	player.RespawnLocation = nil
+	activateShield(state, workspace:GetServerTimeNow())
+	Base.refreshStands(state)
+	Money.publish(state)
+
+	player.CharacterAdded:Connect(function(character)
+		local humanoid = character:WaitForChild("Humanoid")
+		humanoid.Died:Connect(function()
+			if state.carry then
+				Steal.returnRaid(state, states, raidStand, notify)
+			end
+			task.delay(3, function()
+				if states[player] == state then
+					player:LoadCharacter()
+				end
+			end)
+		end)
+		character:WaitForChild("HumanoidRootPart")
+		if states[player] == state and player.Character == character then
+			character:PivotTo(base.frame * CFrame.new(0, 4.5, 0))
+		end
+	end)
+	if rebirthStore then
+		local ok, saved = pcall(function()
+			return rebirthStore:GetAsync(tostring(player.UserId))
+		end)
+		if states[player] ~= state then
+			return
+		end
+		if ok then
+			state.rebirths = tonumber(saved) or 0
+			Money.publish(state)
+		end
+	end
+	player:LoadCharacter()
+end
+
+Players.PlayerAdded:Connect(assignSafehouse)
+Players.PlayerRemoving:Connect(function(player)
+	local state = states[player]
+	if not state then
+		return
+	end
+	if state.carry then
+		Steal.returnRaid(state, states, raidStand, notify)
+	end
+	Base.clearCollection(state)
+	state.base.owner = nil
+	state.base.title.Text = "AVAILABLE SAFEHOUSE"
+	state.base.gate.Color = World.aqua
+	for _, stand in ipairs(state.base.stands) do
+		stand.Color = World.steel
+	end
+	states[player] = nil
+end)
+
+local conveyor = Conveyor.new(map, states, notify)
+local wave = Wave.new(map)
+for _, player in ipairs(Players:GetPlayers()) do
+	task.spawn(assignSafehouse, player)
+end
+
+local incomeClock = 0
+local movementClock = 0
+RunService.Heartbeat:Connect(function(dt)
+	local now = workspace:GetServerTimeNow()
+	incomeClock += dt
+	while incomeClock >= 1 do
+		incomeClock -= 1
+		Money.payIncome(states)
+		for _, state in pairs(states) do
+			Base.updateShield(state, now)
+		end
+	end
+	movementClock += dt
+	if movementClock < 1 / 24 then
+		return
+	end
+	conveyor:step(movementClock, now)
+	movementClock = 0
+	wave:step(now, states, notify)
+	for player, state in pairs(states) do
+		local root = World.aliveRoot(player)
+		if state.carry and root then
+			if Base.isSheltered(state.base, root.Position) then
+				Steal.deliverCarry(state, raidStand, notify)
+			else
+				state.carry.model:PivotTo(root.CFrame * CFrame.new(0, 3.75, 0))
+			end
+		end
+	end
+end)

@@ -1,17 +1,27 @@
-# Brainrot Blitz — make.fun roblox-brainrot-01 entry
+# Brainrot Blitz
 
-[![make.fun](https://make.fun/badge/roblox-brainrot-01.svg)](https://make.fun/bounty/roblox-brainrot-01)
-[![Rank](https://make.fun/badge/roblox-brainrot-01/nagajaja02-pixel/makefun-roblox-brainrot-01/rank.svg)](https://make.fun/bounty/roblox-brainrot-01)
-[![Reward](https://make.fun/badge/roblox-brainrot-01/nagajaja02-pixel/makefun-roblox-brainrot-01/reward.svg)](https://make.fun/bounty/roblox-brainrot-01)
+Brainrot Blitz is a Roblox tycoon set in a neon harbor. A moving supply belt brings in thirteen absurd imports, from the Burrito Bailiff to the Cosmic Coupon. Each import pays cash per second once delivered to your safehouse. Buy higher rarities, expand the collection and decide when to risk a raid or race home ahead of a tsunami.
 
-A 3D brainrot tycoon game for Roblox: absurd meme brainrot characters walk the conveyor, you buy them, place them in your base, and they earn $/second. Climb the rarity ladder from Common to Mythic, mutate your best ones, lock your base against thieves, and survive the brainrot tsunami. Rebirth for a permanent boost and do it all again, faster.
+## Build and test
 
-- `main.ts` (Node 22, standard library only) hands the game in: it copies `game.rbxl`, `src/`, `screenshots/` and `PLAY.json` to `/output`, leaving out every name that starts with a dot, and writes `/output/dossier.json` with `vendor/makefun-roblox.ts`, the kit's copy, unchanged.
-- `game.rbxl` is the place Rojo builds from `src/` and `default.project.json`; `screenshots/` holds captures of it; `PLAY.json` names the published place.
-- One of the screenshots is also the game's first thumbnail on Roblox: the same picture, uploaded on the Creator Dashboard with the game's icon.
+With Rojo 7.7 and Node.js 22.18 or newer, run from the repository root.
 
-Run it as the grader does, writing `out/` in place of `/output`:
+```sh
+rojo --version
+rojo build default.project.json --output game.rbxl
+mkdir -p out
+MAKEFUN_OUTPUT_DIR=out node main.ts
+```
 
-    mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+Open `game.rbxl` in Roblox Studio and press **Play** to spawn the map and characters. Use Studio's **Server & Clients** testing mode with two players to test raids. The start place supports six concurrent players, one per safehouse.
 
-Built for [make.fun](https://make.fun/bounty/roblox-brainrot-01).
+## How to play
+
+1. Follow the conveyor and use the prompt to buy an import. You start with $150 and four display stands.
+2. Bring the import into your own safehouse. The home beacon marks it and delivery installs your cargo automatically. The HUD shows cash, income per second and the wave clock.
+3. Spend income on stronger units or use **Expand Base** to unlock two stands per upgrade up to eight. Rarities are Common, Rare, Epic, Legendary and Mythic. Gold units pay 2× and Diamond units pay 3× their normal income.
+4. Hold the raid prompt on an opponent's unit while their shield is down, then return to your own base with it. Raise the shield from your base terminal for 26 seconds. The HUD shows when the 48-second cooldown ends.
+5. When the evacuation alarm fires, get inside your own safehouse before the wave passes. Falling with a purchased unit in transit refunds it. A stolen unit still in transit goes back to its owner.
+6. Use **Rebirth** to restart with $150 and an empty collection. Stand upgrades carry over and each rebirth adds 50% to income permanently in the published experience. Studio keeps rebirths for the test session. Cash, crew and stand upgrades are session-local.
+
+The captures and public play link are pending owner setup in Studio. Build the place from the Luau in `src/` before you capture or publish it.
