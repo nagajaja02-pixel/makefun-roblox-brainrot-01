@@ -135,7 +135,7 @@ homeMarker.Parent = workspace
 local beacon = Instance.new("BillboardGui")
 beacon.Size = UDim2.fromOffset(120, 29)
 beacon.AlwaysOnTop = true
-beacon.MaxDistance = 235
+beacon.MaxDistance = 310
 beacon.Parent = homeMarker
 label(beacon, 0, 0, 29, 20, aqua, centered).Text = "▼ HOME"
 

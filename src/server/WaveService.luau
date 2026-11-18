@@ -1,5 +1,7 @@
 local World = require(script.Parent.World)
 local Base = require(script.Parent.BaseService)
+local sweepEdge = World.islandHalfX + 12
+local waveWidth = 2 * (World.islandHalfZ + 2)
 local Wave = {}
 Wave.__index = Wave
 
@@ -23,20 +25,20 @@ function Wave:step(now, states, notify)
 			notify(player, "Tsunami incoming! Reach your safehouse.", "warning")
 		end
 	elseif self.phase == "EVACUATE" and now >= self.at then
-		local wall = World.part(self.map, "Tsunami wall", Vector3.new(11, 16, 116), CFrame.new(-112, 7, 0), Color3.fromRGB(43, 171, 237), Enum.Material.Glass)
+		local wall = World.part(self.map, "Tsunami wall", Vector3.new(11, 16, waveWidth), CFrame.new(-sweepEdge, 7, 0), Color3.fromRGB(43, 171, 237), Enum.Material.Glass)
 		wall.CanCollide = false
 		wall.Transparency = 0.23
-		local crest = World.part(self.map, "Tsunami crest", Vector3.new(12, 2, 116), wall.CFrame * CFrame.new(0, 8, 0), Color3.fromRGB(158, 239, 255), Enum.Material.Neon)
+		local crest = World.part(self.map, "Tsunami crest", Vector3.new(12, 2, waveWidth), wall.CFrame * CFrame.new(0, 8, 0), Color3.fromRGB(158, 239, 255), Enum.Material.Neon)
 		crest.CanCollide = false
 		self.wall, self.crest = wall, crest
 		self:setPhase("WAVE ACTIVE", now + 8)
 	elseif self.wall then
-		local x = -112 + math.clamp(1 - (self.at - now) / 8, 0, 1) * 224
+		local x = -sweepEdge + math.clamp(1 - (self.at - now) / 8, 0, 1) * (2 * sweepEdge)
 		self.wall.CFrame = CFrame.new(x, 7, 0)
 		self.crest.CFrame = self.wall.CFrame * CFrame.new(0, 8, 0)
 		for player, state in pairs(states) do
 			local root = World.aliveRoot(player)
-			if root and not self.hit[player] and math.abs(root.Position.X - x) <= 8 and math.abs(root.Position.Z) <= 59 then
+			if root and not self.hit[player] and math.abs(root.Position.X - x) <= 8 and math.abs(root.Position.Z) <= World.islandHalfZ then
 				self.hit[player] = true
 				if Base.isSheltered(state.base, root.Position) then
 					notify(player, "Safehouse held. Your collection is safe.", "success")

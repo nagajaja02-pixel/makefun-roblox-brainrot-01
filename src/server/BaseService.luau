@@ -14,8 +14,8 @@ local plotColors = {
 
 function Base.build(map)
 	local bases = {}
-	for _, z in ipairs({ -36, 36 }) do
-		for _, x in ipairs({ 0, -64, 64 }) do
+	for _, z in ipairs({ -World.plotRow, World.plotRow }) do
+		for _, x in ipairs({ 0, -World.plotSpacing, World.plotSpacing }) do
 			local model = Instance.new("Model")
 			model.Name = "Safehouse " .. (#bases + 1)
 			model.Parent = map
