@@ -1,79 +1,53 @@
+local RunService = game:GetService("RunService")
 local CarryPose = {}
 
-local shoulderNames = {
-	["Left Shoulder"] = true,
-	["Right Shoulder"] = true,
-	LeftShoulder = true,
-	RightShoulder = true,
-}
-local lift = CFrame.Angles(math.rad(168), 0, 0)
-
-local function collectShoulders(character)
+function CarryPose.bind(player)
 	local shoulders = {}
-	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
-	if torso then
-		for _, joint in ipairs(character:GetDescendants()) do
-			if shoulderNames[joint.Name] and joint:IsA("Motor6D") and joint.Part0 == torso and joint.Part1 then
-				local original = joint.C0
-				table.insert(shoulders, {
-					joint = joint,
-					original = original,
-					raised = CFrame.new(original.Position) * lift * original.Rotation,
-				})
+	local function restore()
+		for joint, resting in shoulders do
+			if joint.Parent then
+				joint.C0 = resting
+				joint.Transform = CFrame.identity
+			end
+		end
+		table.clear(shoulders)
+	end
+	player.CharacterRemoving:Connect(restore)
+	local function apply(transformOnly)
+		local character = player.Character
+		if not character or not player:GetAttribute("Carrying") then
+			if next(shoulders) then
+				restore()
+			end
+			return
+		end
+		local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+		if not torso then
+			return
+		end
+		for _, side in {"Left","Right"} do
+			local joint = torso:FindFirstChild(side.."Shoulder")
+				or torso:FindFirstChild(side.." Shoulder")
+			if not joint then
+				local arm = character:FindFirstChild(side.."UpperArm")
+				joint = arm and arm:FindFirstChild(side.."Shoulder")
+			end
+			if joint and joint:IsA("Motor6D") then
+				local resting = shoulders[joint] or joint.C0
+				shoulders[joint] = resting
+				if not transformOnly then
+					local rotation = CFrame.Angles(math.rad(155),0,math.rad(side == "Left" and -14 or 14))
+					joint.C0 = CFrame.new(resting.Position)*rotation*resting.Rotation
+				end
+				joint.Transform = CFrame.identity
 			end
 		end
 	end
-	return shoulders
-end
-
-function CarryPose.start(players, runService)
-	local active = {}
-
-	local function restore(player)
-		local pose = active[player]
-		if pose then
-			for _, shoulder in ipairs(pose.shoulders) do
-				shoulder.joint.C0 = shoulder.original
-			end
-			active[player] = nil
-		end
-	end
-
-	players.PlayerRemoving:Connect(restore)
-	runService.RenderStepped:Connect(function()
-		for _, player in ipairs(players:GetPlayers()) do
-			local character = player.Character
-			local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-			local cargo = player:GetAttribute("Carrying")
-			local pose = active[player]
-			if pose and (pose.character ~= character or not humanoid or humanoid.Health <= 0 or not cargo or cargo == "") then
-				restore(player)
-				pose = nil
-			end
-			if humanoid and humanoid.Health > 0 and cargo and cargo ~= "" then
-				if not pose then
-					local shoulders = collectShoulders(character)
-					if #shoulders == 2 then
-						pose = { character = character, shoulders = shoulders }
-						active[player] = pose
-					end
-				end
-				if pose then
-					for _, shoulder in ipairs(pose.shoulders) do
-						shoulder.joint.C0 = shoulder.raised
-					end
-				end
-			end
-		end
+	RunService.RenderStepped:Connect(function()
+		apply(false)
 	end)
-
-	-- Animator writes Transform before PreSimulation. Keep its leg and torso motion.
-	runService.PreSimulation:Connect(function()
-		for _, pose in pairs(active) do
-			for _, shoulder in ipairs(pose.shoulders) do
-				shoulder.joint.Transform = CFrame.identity
-			end
-		end
+	RunService.PreSimulation:Connect(function()
+		apply(true)
 	end)
 end
 

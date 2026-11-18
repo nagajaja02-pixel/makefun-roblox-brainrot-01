@@ -1,251 +1,194 @@
-local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local World = require(script.World)
 local Base = require(script.BaseService)
-local Shield = require(script.ShieldService)
 local Money = require(script.MoneyService)
+local Shield = require(script.ShieldService)
 local Steal = require(script.StealService)
-local Wave = require(script.WaveService)
-local Conveyor = require(script.ConveyorService)
 local Merchant = require(script.MerchantService)
+local Conveyor = require(script.ConveyorService)
+local Wave = require(script.WaveService)
+local started = workspace:GetServerTimeNow()
 
-local map = World.buildHarbor()
-local bases = Base.build(map)
-local states = {}
-local rebirthStore = not RunService:IsStudio() and DataStoreService:GetDataStore("BlitzRebirthsV1")
-local feedback = Instance.new("RemoteEvent")
-feedback.Name = "BlitzFeedback"
-feedback.Parent = ReplicatedStorage
-local rebirthRequest = Instance.new("RemoteEvent")
-rebirthRequest.Name = "BlitzRebirth"
-rebirthRequest.Parent = ReplicatedStorage
+local net = Instance.new("Folder")
+net.Name = "BlitzEvents"
+local notice = Instance.new("RemoteEvent")
+notice.Name = "Notice"
+notice.Parent = net
+local rebirth = Instance.new("RemoteEvent")
+rebirth.Name = "Rebirth"
+rebirth.Parent = net
 
-local function notify(player, text, style)
-	if player.Parent == Players then
-		feedback:FireClient(player, text, style)
+local harbor = World.build()
+local plots = Base.build(harbor)
+Shield.build(plots)
+Merchant.build(harbor,notice)
+local moveBelt = Conveyor.start(harbor)
+local moveWave = Wave.start(harbor,plots,notice,started)
+
+local function tell(player,text,seconds)
+	notice:FireClient(player,text,seconds or 3)
+end
+
+local function setPlot(player,plot)
+	local state = Money.states[player]
+	state.plot = plot
+	player:SetAttribute("HasSafehouse",plot ~= nil)
+	if plot then
+		Base.paint(plot,Money.capacity(state))
 	end
 end
 
-local function raidStand(player, victim, index, slot)
-	if player == victim.player and states[player] == victim then
-		Steal.pickupOwn(victim, index, slot, notify)
-	else
-		Steal.beginRaid(player, victim, index, slot, states, notify)
-	end
-end
-
-local function upgradeBase(state)
-	if state.level == 3 then
-		notify(state.player, "All eight stands are open.", "warning")
+local function setupCharacter(player,character)
+	local human = character:WaitForChild("Humanoid")
+	local root = character:WaitForChild("HumanoidRootPart")
+	local state = Money.states[player]
+	if not state or player.Character ~= character then
 		return
 	end
-	if not Money.spend(state, Money.upgradePrice(state)) then
-		notify(state.player, "Save more cash to open two stands.", "warning")
-		return
+	if not state.plot then
+		setPlot(player,Base.claim(plots,player))
 	end
-	state.level += 1
-	Base.refreshStands(state)
-	Money.publish(state)
-	notify(state.player, "Base expanded. Two more income stands are open.", "success")
-end
-
-local function rebirthCollection(state)
-	if state.carry then
-		notify(state.player, "Deliver your brainrot before rebirthing.", "warning")
-		return
-	end
-	for _, slot in pairs(state.slots) do
-		if slot.inTransit then
-			notify(state.player, "Wait until the active raid is resolved.", "warning")
-			return
-		end
-	end
-	if state.cash < Money.rebirthPrice(state) then
-		notify(state.player, "Save more cash to rebirth.", "warning")
-		return
-	end
-	local rebirths = state.rebirths + 1
-	if rebirthStore then
-		state.savingRebirth = true
-		local ok, saved = pcall(function()
-			return rebirthStore:UpdateAsync(tostring(state.player.UserId), function(previous)
-				return math.max(tonumber(previous) or 0, rebirths)
-			end)
-		end)
-		state.savingRebirth = false
-		if states[state.player] ~= state then
-			return
-		end
-		if not ok then
-			notify(state.player, "Rebirth save unavailable. Your crew and cash are safe.", "warning")
-			return
-		end
-		rebirths = saved
-	end
-	state.rebirths = rebirths
-	state.cash = Base.startingCash
-	Base.clearCollection(state)
-	Money.publish(state)
-	notify(state.player, "Reborn! Added +50% income.", "success")
-end
-
-rebirthRequest.OnServerEvent:Connect(function(player)
-	local state = states[player]
-	if state and state.ready and not state.savingRebirth and World.aliveRoot(player) then
-		rebirthCollection(state)
-	end
-end)
-
-for _, base in ipairs(bases) do
-	for index, terminal in ipairs(base.controls) do
-		local action = ({ "Raise 26s shield", "Buy two stands" })[index]
-		World.prompt(terminal, action, terminal.Name, 0.25).Triggered:Connect(function(player)
-			local state = states[player]
-			if not state or state.savingRebirth or state.base ~= base or not World.near(player, terminal) then
-				return
-			end
-			if index == 1 then
-				local now = workspace:GetServerTimeNow()
-				if now >= state.lockReady then
-					Shield.activate(state, now)
-					notify(player, "Shield up. Raiders are blocked for 26 seconds.", "success")
-				else
-					notify(player, string.format("Shield ready in %ds.", math.ceil(state.lockReady - now)), "warning")
-				end
-			else
-				upgradeBase(state)
-			end
-		end)
-	end
-end
-
-local function assignSafehouse(player)
-	if states[player] then
-		return
-	end
-	local base
-	for _, candidate in ipairs(bases) do
-		if not candidate.owner then
-			base = candidate
-			break
-		end
-	end
-	if not base then
-		player:Kick("This harbor has six safehouses. Join another server for a free plot.")
-		return
-	end
-	base.owner = player
-	local state = { player = player, base = base, slots = {}, cash = Base.startingCash, rate = 0, level = 1, rebirths = 0 }
-	states[player] = state
-	player:SetAttribute("Carrying", "")
-	player:SetAttribute("Home", base.entrance)
-	player.RespawnLocation = nil
-	local function trackShieldCharacter(character)
-		if state.releaseShieldCharacter then
-			state.releaseShieldCharacter()
-		end
-		state.releaseShieldCharacter = Shield.trackCharacter(character, base.ownerCollisionGroup)
-	end
-	if player.Character then
-		trackShieldCharacter(player.Character)
-	end
-	Shield.activate(state, workspace:GetServerTimeNow())
-	Base.refreshStands(state)
-	Money.publish(state)
-
-	state.characterAdded = player.CharacterAdded:Connect(function(character)
-		trackShieldCharacter(character)
-		local humanoid = character:WaitForChild("Humanoid")
-		humanoid.Died:Connect(function()
-			if state.carry then
-				Steal.returnRaid(state, states, raidStand, notify)
-			end
-			task.delay(3, function()
-				if states[player] == state then
-					player:LoadCharacter()
-				end
-			end)
-		end)
-		character:WaitForChild("HumanoidRootPart")
-		if states[player] == state and player.Character == character then
-			character:PivotTo(base.frame * CFrame.new(0, 4.5, 0))
-		end
+	Shield.assign(character,state.plot)
+	local spawn = state.plot and state.plot.origin*CFrame.new(0,3.5,-14.9) or CFrame.new(0,4,-23)
+	character:PivotTo(spawn)
+	human.Died:Connect(function()
+		Steal.returnItem(player)
 	end)
-	if rebirthStore then
-		local ok, saved = pcall(function()
-			return rebirthStore:GetAsync(tostring(player.UserId))
-		end)
-		if states[player] ~= state then
-			return
-		end
-		if ok then
-			state.rebirths = tonumber(saved) or 0
-			Money.publish(state)
-		end
-	end
-	state.ready = true
-	player:LoadCharacter()
 end
 
-Players.PlayerAdded:Connect(assignSafehouse)
-Players.PlayerRemoving:Connect(function(player)
-	local state = states[player]
+local function join(player)
+	if Money.states[player] then
+		return
+	end
+	local plot = Base.claim(plots,player)
+	Money.join(player,plot)
+	setPlot(player,plot)
+	player:SetAttribute("Carrying",false)
+	player.CharacterRemoving:Connect(function()
+		Steal.returnItem(player)
+	end)
+	player.CharacterAdded:Connect(function(character)
+		setupCharacter(player,character)
+	end)
+	if player.Character then
+		task.spawn(setupCharacter,player,player.Character)
+	end
+end
+
+local function leave(player)
+	local state = Money.states[player]
 	if not state then
 		return
 	end
-	if state.carry then
-		Steal.returnRaid(state, states, raidStand, notify)
+	Steal.returnItem(player)
+	local plot = state.plot
+	if plot then
+		Steal.clearPlot(plot)
+		Shield.reset(plot)
+		Base.release(plot)
 	end
-	Base.clearCollection(state)
-	state.base.owner = nil
-	Shield.clear(state.base)
-	state.characterAdded:Disconnect()
-	if state.releaseShieldCharacter then
-		state.releaseShieldCharacter()
-	end
-	for _, stand in ipairs(state.base.stands) do
-		stand.Color = World.steel
-	end
-	states[player] = nil
-end)
-
-local conveyor = Conveyor.new(map, states, notify)
-local wave = Wave.new(map)
-Merchant.build(map, states, notify)
-for _, player in ipairs(Players:GetPlayers()) do
-	task.spawn(assignSafehouse, player)
+	Money.states[player] = nil
+	Money.save(player,state)
 end
 
-local incomeClock = 0
-local movementClock = 0
-RunService.Heartbeat:Connect(function(dt)
-	local now = workspace:GetServerTimeNow()
-	incomeClock += dt
-	while incomeClock >= 1 do
-		incomeClock -= 1
-		Money.payIncome(states)
-	end
-	movementClock += dt
-	if movementClock < 1 / 24 then
+for _, plot in plots do
+	plot.shieldPrompt.Triggered:Connect(function(player)
+		if plot.owner ~= player or not Steal.near(player,plot.shieldPrompt.Parent,8) then
+			return
+		end
+		local now = workspace:GetServerTimeNow()
+		if Shield.activate(plot,now) then
+			tell(player,"Shield active for 26 seconds.")
+		else
+			tell(player,("Shield ready in %ds."):format(math.ceil(plot.shieldReady-now)))
+		end
+	end)
+	plot.expandPrompt.Triggered:Connect(function(player)
+		if plot.owner ~= player or not Steal.near(player,plot.expandPrompt.Parent,8) then
+			return
+		end
+		local state = Money.states[player]
+		if Money.capacity(state) >= #plot.slots then
+			tell(player,"Safehouse is fully expanded.")
+			return
+		end
+		local cost = Money.upgradePrice(state)
+		if Money.spend(player,state,cost) then
+			state.level += 1
+			Base.paint(plot,Money.capacity(state))
+			Money.publish(player,state)
+			tell(player,("Safehouse expanded to %d stands."):format(Money.capacity(state)))
+		else
+			tell(player,("Expansion costs $%d."):format(cost))
+		end
+	end)
+end
+
+rebirth.OnServerEvent:Connect(function(player,quotedPrice)
+	local state = Money.states[player]
+	if not state or not state.plot then
 		return
 	end
-	conveyor:step(movementClock, now)
-	movementClock = 0
-	wave:step(now, states, notify)
-	for player, state in pairs(states) do
-		Shield.update(state, now)
-		local root = World.aliveRoot(player)
-		if state.carry and root then
-			if Base.isSheltered(state.base, root.Position) then
-				if not state.carry.waitForExit then
-					Steal.deliverCarry(state, raidStand, notify)
-				end
-			else
-				state.carry.waitForExit = false
-			end
-		end
+	if not state.loaded then
+		tell(player,"Rebirth data is unavailable.")
+		return
+	end
+	local price = Money.rebirthPrice(state)
+	if quotedPrice ~= price or state.cash < price then
+		tell(player,("Rebirth costs $%d."):format(price))
+		return
+	end
+	if Steal.carrying[player] or Steal.hasTransit(state.plot) then
+		tell(player,"Resolve all carried or raided brainrot first.")
+		return
+	end
+	Steal.clearPlot(state.plot)
+	state.rebirths += 1
+	state.cash = 150
+	Money.publish(player,state)
+	tell(player,"Rebirth complete! Income bonus increased.")
+	task.spawn(Money.save,player,state)
+end)
+
+Players.PlayerAdded:Connect(join)
+Players.PlayerRemoving:Connect(leave)
+for _, player in Players:GetPlayers() do
+	join(player)
+end
+net.Parent = ReplicatedStorage
+
+game:BindToClose(function()
+	local pending = 0
+	for player,state in Money.states do
+		pending += 1
+		task.spawn(function()
+			Money.save(player,state)
+			pending -= 1
+		end)
+	end
+	while pending > 0 do
+		task.wait()
+	end
+end)
+
+local incomeElapsed, beltElapsed = 0,0
+local beltStep = 1/24
+RunService.Heartbeat:Connect(function(dt)
+	local now = workspace:GetServerTimeNow()
+	Shield.step(plots,now)
+	Steal.step()
+	moveWave(now)
+	incomeElapsed += dt
+	while incomeElapsed >= 1 do
+		incomeElapsed -= 1
+		Money.tick()
+	end
+	beltElapsed += dt
+	while beltElapsed >= beltStep do
+		beltElapsed -= beltStep
+		moveBelt(beltStep)
 	end
 end)

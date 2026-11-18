@@ -1,322 +1,204 @@
 local Lighting = game:GetService("Lighting")
-local flat = Enum.Material.SmoothPlastic
 local World = {}
-World.ink = Color3.fromRGB(19, 28, 48)
-World.steel = Color3.fromRGB(99, 150, 181)
-World.aqua = Color3.fromRGB(78, 255, 218)
-World.gold = Color3.fromRGB(255, 199, 101)
-World.white = Color3.fromRGB(244, 248, 255)
-World.islandHalfX = 134
-World.islandHalfZ = 100
-World.plotSpacing = 82
-World.plotRow = 51
-World.beltTop = 1.8
-World.wallThickness = 3
-World.machineDepth = 20
-World.importBack = -World.islandHalfX + World.wallThickness
-World.importCenter = World.importBack + World.machineDepth / 2
-World.receiverBack = World.islandHalfX - World.wallThickness
-World.receiverCenter = World.receiverBack - World.machineDepth / 2
-World.importCurtain = World.importCenter + 6
-World.receiverCurtain = World.receiverCenter - 6
+local rgb = Color3.fromRGB
+local V = Vector3.new
+local M = Enum.Material
 
-function World.part(parent, name, size, frame, color, material, shape)
+World.ink = rgb(19,28,48)
+World.steel = rgb(99,150,181)
+World.aqua = rgb(78,255,218)
+World.gold = rgb(255,199,101)
+World.white = rgb(244,248,255)
+World.import = -121
+World.importCurtain = -115
+World.receiverCurtain = 115
+World.beltTop = 1.8
+
+function World.part(parent, name, size, pose, color, material, collides, alpha)
 	local part = Instance.new("Part")
 	part.Name = name
-	part.Anchored = true
 	part.Size = size
-	part.CFrame = frame
+	part.CFrame = typeof(pose) == "CFrame" and pose or CFrame.new(pose)
 	part.Color = color
-	part.Material = material or Enum.Material.SmoothPlastic
-	part.Shape = shape or Enum.PartType.Block
+	part.Material = material or M.SmoothPlastic
+	part.Anchored = true
+	part.CanCollide = collides ~= false
+	part.CanTouch = part.CanCollide
+	part.CanQuery = part.CanCollide
+	part.Transparency = alpha or 0
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
 	part.Parent = parent
 	return part
 end
 
-function World.sign(part, text, color, width, height, offset, distance)
-	local board = Instance.new("BillboardGui")
-	board.Size = UDim2.fromOffset(width, height)
-	board.StudsOffsetWorldSpace = offset
-	board.MaxDistance = distance or 64
-	board.AlwaysOnTop = true
-	board.Parent = part
+function World.sign(part, text, face, color)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = face or Enum.NormalId.Front
+	gui.CanvasSize = Vector2.new(600, 160)
+	gui.Parent = part
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.fromScale(1, 1)
-	label.BackgroundColor3 = World.ink
-	label.BackgroundTransparency = 0.12
-	label.TextColor3 = color
-	label.TextSize = height >= 50 and 15 or 18
+	label.BackgroundTransparency = 1
+	label.TextColor3 = color or World.white
+	label.TextStrokeTransparency = 0.55
 	label.Font = Enum.Font.GothamBold
+	label.TextScaled = true
 	label.Text = text
-	label.Parent = board
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 7)
-	corner.Parent = label
+	label.Parent = gui
 	return label
 end
 
-function World.surfaceSign(part, text, color)
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Front
-	gui.CanvasSize = Vector2.new(512, 80)
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
-	gui.LightInfluence = 0.15
-	gui.Parent = part
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.fromScale(0.94, 0.82)
-	label.Position = UDim2.fromScale(0.03, 0.09)
-	label.BackgroundTransparency = 1
-	label.TextColor3 = color
-	label.TextScaled = true
-	label.Font = Enum.Font.GothamBold
-	label.Text = text
-	label.Parent = gui
-end
-
-function World.prompt(part, action, object, duration)
+function World.prompt(parent, action, object, hold, distance)
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = action
 	prompt.ObjectText = object
-	prompt.HoldDuration = duration or 0.12
-	prompt.MaxActivationDistance = 10
+	prompt.HoldDuration = hold or 0
+	prompt.MaxActivationDistance = distance or 9
 	prompt.RequiresLineOfSight = false
-	prompt.Parent = part
+	prompt.Parent = parent
 	return prompt
 end
 
-function World.aliveRoot(player)
-	local character = player.Character
-	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	return humanoid and humanoid.Health > 0 and character:FindFirstChild("HumanoidRootPart")
+local function machine(parent, x, direction, title)
+	local teal = rgb(25,169,164)
+	local function piece(name, sx, sy, sz, dx, y, z, color, material, solid)
+		return World.part(parent, name, V(sx,sy,sz), V(x+dx*direction,y,z), color, material, solid)
+	end
+	piece("Steel roof",20,1.2,22,0,10,0,World.steel,M.Metal)
+	for _, side in {-1,1} do
+		piece("Machine housing",20,10,2,0,5,side*9,teal)
+		piece("Vent plate",8,2.5,0.2,0,6,side*10,World.ink)
+		for slat = -3,3 do
+			piece("Vent slat",0.5,2,0.25,slat,6,side*10.15,World.steel,M.Metal,false)
+		end
+		piece("Warning lamp",1,0.6,1,5,10.9,side*9,World.gold,M.Neon,false)
+	end
+	for strip = -7,7 do
+		piece("Rubber portal curtain",0.25,6,0.93,6,5.1,strip,World.ink,M.Rubber,false)
+	end
+	local sign = piece("Machine sign",0.35,1.7,15,9,8.65,0,World.ink,nil,false)
+	World.sign(sign,title,direction == 1 and Enum.NormalId.Right or Enum.NormalId.Left)
 end
 
-function World.near(player, part)
-	local root = World.aliveRoot(player)
-	return root and part.Parent and (root.Position - part.Position).Magnitude <= 13
+local function perimeter(parent)
+	local brown = rgb(139,87,51)
+	local cap = rgb(195,134,83)
+	for _, side in {-1,1} do
+		World.part(parent,"Harbor wall",V(268,18,3),V(0,9,side*100),brown)
+		World.part(parent,"Wall coping",V(269,0.7,3.7),V(0,18.3,side*100),cap)
+		World.part(parent,"Harbor wall",V(3,18,200),V(side*134,9,0),brown)
+		World.part(parent,"Wall coping",V(3.7,0.7,201),V(side*134,18.3,0),cap)
+		for x = -120,120,24 do
+			World.part(parent,"Wall pilaster",V(3.2,18.5,4.5),V(x,9.25,side*100),cap)
+		end
+		for z = -80,80,20 do
+			World.part(parent,"Wall pilaster",V(4.5,18.5,3.2),V(side*134,9.25,z),cap)
+		end
+	end
 end
 
-function World.buildHarbor()
+local function harbor(parent)
+	local timber = rgb(156,103,63)
+	World.part(parent,"Pier",V(126,1,15),V(-41,0.5,92),timber,M.WoodPlanks)
+	for x = -101,19,8 do
+		World.part(parent,"Pier piling",V(1.4,4,1.4),V(x,1,97),World.ink,M.Wood)
+	end
+	local building = World.part(parent,"Customs warehouse",V(28,12,12),V(-73,6,76),World.steel,M.Metal)
+	World.sign(building,"BLITZ CUSTOMS")
+	World.part(parent,"Customs roof",V(30,0.7,14),V(-73,12.4,76),World.ink,M.Metal)
+	local colors = {rgb(190,76,54), rgb(25,169,164), rgb(237,166,57), rgb(86,125,188)}
+	for index, color in colors do
+		local x = -47 + ((index-1)%2)*14
+		local y = index <= 2 and 2.1 or 6.3
+		World.part(parent,"Cargo container",V(13,4.2,6),V(x,y,78),color,M.Metal)
+		for rib = -5,5 do
+			World.part(parent,"Container rib",V(0.17,3.8,0.2),V(x+rib,y,74.95),World.ink,M.Metal,false,0.35)
+		end
+	end
+	local yellow = rgb(248,177,56)
+	World.part(parent,"Crane mast",V(2,19,2),V(-10,9.5,67),yellow,M.Metal)
+	World.part(parent,"Crane boom",V(22,1.2,1.5),V(-4,19,67),yellow,M.Metal)
+	World.part(parent,"Crane cab",V(3.8,3.2,3.7),V(-8,15.5,67),World.ink)
+	World.part(parent,"Cab window",V(3.1,1.8,0.2),V(-8,15.7,65.05),World.steel,M.Glass,false)
+	World.part(parent,"Crane cable",V(0.13,9,0.13),V(5,14,67),World.ink)
+	World.part(parent,"Cargo hook",V(1,1.1,0.4),V(5,9.2,67),yellow,M.Metal)
+end
+
+local function decorate(parent)
+	local sand = rgb(236,212,160)
+	for _, side in {-1,1} do
+		World.part(parent,"Evacuation lane",V(250,0.08,3.6),V(0,0.045,side*25),sand,nil,false)
+		local marker = World.part(parent,"Wayfinding",V(8,1.4,0.35),
+			CFrame.new(17,2.25,side*30)*CFrame.Angles(0,side == 1 and 0 or math.pi,0),World.ink)
+		World.sign(marker,"SAFEHOUSES")
+		World.part(parent,"Sign post",V(0.4,2,0.4),V(17,1,side*30),World.steel)
+		for _, x in {-110,-41,41,110} do
+			local z = side*31
+			World.part(parent,"Streetlight pole",V(0.45,8,0.45),V(x,4,z),World.ink,M.Metal)
+			local lamp = World.part(parent,"Light head",V(2.1,0.45,1.2),V(x,8,z),World.gold,M.Neon,false)
+			local light = Instance.new("PointLight")
+			light.Range = 15
+			light.Brightness = 0.75
+			light.Color = World.gold
+			light.Parent = lamp
+			World.part(parent,"Pennant",V(1.6,2.2,0.12),V(x+0.9,5.6,z),side == 1 and rgb(25,169,164) or rgb(223,70,69),M.Fabric,false)
+		end
+		for _, x in {-111,-41,41,111} do
+			local z = side*78
+			World.part(parent,"Palm trunk",V(0.85,8,0.85),CFrame.new(x,4,z)*CFrame.Angles(0,0,0.12),rgb(132,89,47),M.Wood)
+			for leaf = 0,5 do
+				local pose = CFrame.new(x-0.45,8,z)*CFrame.Angles(0,leaf*math.pi/3,0)
+				World.part(parent,"Palm frond",V(2,0.45,4.8),pose*CFrame.new(0,-0.25,-2)*CFrame.Angles(-0.18,0,0),rgb(50,142,68),nil,false)
+			end
+			local bush = World.part(parent,"Low shrub",V(3,1.55,2.4),V(x+1.3,0.7,z),rgb(57,154,69),nil,false)
+			bush.Shape = Enum.PartType.Ball
+		end
+		for _, x in {-41,41} do
+			local z = side*53
+			World.part(parent,"Supply crate",V(3,3,3),V(x,1.5,z),rgb(156,103,63),M.WoodPlanks)
+			local barrel = World.part(parent,"Barrel",V(2.4,2,2),CFrame.new(x+3,1.2,z)*CFrame.Angles(0,0,math.pi/2),World.steel,M.Metal)
+			barrel.Shape = Enum.PartType.Cylinder
+			for _, dx in {-4,0,4} do
+				World.part(parent,"Fence post",V(0.35,2,0.35),V(x+dx,1,z+4),World.ink)
+			end
+			World.part(parent,"Fence rail",V(8,0.35,0.32),V(x,1.5,z+4),World.steel)
+		end
+	end
+end
+
+function World.build()
+	local parent = Instance.new("Folder")
+	parent.Name = "Blitz Harbor"
+	parent.Parent = workspace
 	Lighting.ClockTime = 10.5
 	Lighting.Brightness = 3.5
-	Lighting.Ambient = Color3.fromRGB(180, 172, 160)
-	Lighting.OutdoorAmbient = Color3.fromRGB(191, 194, 188)
+	Lighting.Ambient = rgb(180,172,160)
+	Lighting.OutdoorAmbient = rgb(191,194,188)
 	local atmosphere = Instance.new("Atmosphere")
 	atmosphere.Density = 0.12
 	atmosphere.Glare = 0.12
 	atmosphere.Haze = 0.35
-	atmosphere.Color = Color3.fromRGB(206, 234, 255)
-	atmosphere.Decay = Color3.fromRGB(167, 206, 246)
 	atmosphere.Parent = Lighting
 	local clouds = Instance.new("Clouds")
-	clouds.Color = Color3.fromRGB(255, 249, 238)
 	clouds.Cover = 0.26
 	clouds.Density = 0.72
 	clouds.Parent = workspace.Terrain
-	local map = Instance.new("Folder")
-	map.Name = "Blitz Harbor"
-	map.Parent = workspace
-	World.part(map, "Ocean", Vector3.new(1300, 8, 1300), CFrame.new(0, -8, 0), Color3.fromRGB(35, 172, 235), Enum.Material.SmoothPlastic)
-	local halfX, halfZ = World.islandHalfX, World.islandHalfZ
-	World.part(map, "Harbor island", Vector3.new(2 * halfX, 8, 2 * halfZ),
-		CFrame.new(0, -4, 0), Color3.fromRGB(103, 188, 62), Enum.Material.SmoothPlastic)
-
-	local function detail(name, sx, sy, sz, x, y, z, color, material, angle, shape)
-		local part = World.part(map, name, Vector3.new(sx, sy, sz),
-			CFrame.new(x, y, z) * CFrame.Angles(0, 0, angle or 0), color, material, shape)
-		part.CanCollide = false
-		part.CanTouch = false
-		part.CanQuery = false
-		return part
+	World.part(parent,"Ocean",V(1300,1,1300),V(0,-2,0),rgb(35,172,235),M.SmoothPlastic,false)
+	World.part(parent,"Harbor island",V(268,3,200),V(0,-1.5,0),rgb(103,188,62),M.Grass)
+	World.part(parent,"Conveyor",V(262,1.8,16),V(0,0.9,0),World.ink,M.Metal)
+	for _, side in {-1,1} do
+		World.part(parent,"Conveyor rail",V(262,0.23,0.32),V(0,1.73,side*7.85),World.aqua,M.Neon,false)
 	end
-	local teal = Color3.fromRGB(25, 169, 164)
-	local vermilion = Color3.fromRGB(244, 101, 75)
-	local cream = Color3.fromRGB(255, 232, 185)
-	local glow = Enum.Material.Neon
-	local brown = Color3.fromRGB(139, 87, 51)
-	local coping = Color3.fromRGB(195, 134, 83)
-	local rubber = Color3.fromRGB(42, 62, 76)
-	local hazard = Color3.fromRGB(255, 209, 52)
-	local top = World.beltTop
-	local beltStart, beltEnd = World.importBack, World.receiverBack
-	local beltLength = beltEnd - beltStart
-	local beltCenter = (beltStart + beltEnd) / 2
-	local belt = World.part(map, "Conveyor", Vector3.new(beltLength, 0.56, 16),
-		CFrame.new(beltCenter, top - 0.28, 0), rubber, Enum.Material.SmoothPlastic)
-	for x = beltStart + 2, beltEnd - 2, 4 do
-		detail("Conveyor tread", 0.22, 0.06, 15.5, x, top + 0.02, 0, World.steel, flat)
+	for x = -128,128,4 do
+		World.part(parent,"Belt tread",V(0.15,0.03,15.1),V(x,1.804,0),World.steel,M.Metal,false)
 	end
-	for x = World.importCurtain + 5, World.receiverCurtain - 4, 14 do
-		detail("Conveyor support crossbeam", 1.15, 0.4, 16.8, x, 1.14, 0, World.steel, flat)
-		for _, z in ipairs({ -6.8, 6.8 }) do
-			detail("Conveyor foot", 2.4, 0.18, 2.2, x, 0.09, z, World.steel, flat)
-			detail("Conveyor leg", 0.85, 1.15, 0.85, x, 0.65, z, World.steel, flat)
-		end
-	end
-	local beltLights = { World.gold, World.aqua, Color3.fromRGB(255, 121, 190), Color3.fromRGB(132, 177, 255) }
-	for _, side in ipairs({ -1, 1 }) do
-		local railZ = side * 8
-		detail("Steel edge rail", beltLength, 0.35, 0.48, beltCenter, top + 0.22, railZ, World.steel, flat)
-		detail("Hazard edge", beltLength, 0.24, 0.43, beltCenter, top - 0.33, railZ, hazard, flat)
-		for x = World.importCurtain + 3, World.receiverCurtain - 2, 4 do
-			detail("Hazard stripe", 1.05, 0.26, 0.45, x, top - 0.33, railZ, rubber, flat, 0.26)
-		end
-		for x = World.importCurtain + 5, World.receiverCurtain - 4, 7 do
-			detail("Roller end cap", 0.64, 0.64, 0.28, x, top - 0.77, railZ, World.steel, flat, 0, Enum.PartType.Ball)
-			detail("Rail light", 1.8, 0.12, 0.36, x, top + 0.45, railZ, beltLights[((x - World.importCurtain - 5) / 7 + side) % 4 + 1], glow)
-		end
-	end
-	for _, x in ipairs({ beltStart + 0.55, beltEnd - 0.55 }) do
-		local roller = detail("Drive roller", 16.8, 1.1, 1.1, x, top - 0.53, 0,
-			World.steel, flat, 0, Enum.PartType.Cylinder)
-		roller.CFrame *= CFrame.Angles(0, math.pi / 2, 0)
-	end
-	for _, side in ipairs({ -1, 1 }) do
-		local x = side < 0 and World.importCenter or World.receiverCenter
-		local curtain = side < 0 and World.importCurtain or World.receiverCurtain
-		local mouth = curtain - side * 3
-		for _, z in ipairs({ -9.5, 9.5 }) do
-			World.part(map, "Machine housing", Vector3.new(World.machineDepth, 12, 3), CFrame.new(x, 6, z), teal, flat)
-			detail("Portal jamb", 1.6, 10, 1.5, mouth, 5, z, World.steel, flat)
-			detail("Machine warning light", 1.5, 0.4, 1.5, x, 12.2, z, hazard, glow)
-			for vent = -6, 6, 2 do
-				detail("Machine cooling vent", 0.6, 3.8, 0.16, x + vent, 5, z / math.abs(z) * 11.06, rubber, flat)
-			end
-		end
-		World.part(map, "Machine backplate", Vector3.new(1.5, 12, 19), CFrame.new(x + side * (World.machineDepth / 2 - 0.75), 6, 0), teal, flat)
-		detail("Machine roof", World.machineDepth, 2, 22, x, 11, 0, World.steel, flat)
-		for z = -7.5, 7.5, 1 do
-			detail("Flexible portal curtain", 0.25, 8.1, 1, curtain, 5.85, z, rubber)
-		end
-		local fascia = detail("Machine header", 1.8, 2.6, 22, mouth, 9.85, 0, World.ink, flat)
-		World.sign(fascia, side < 0 and "BLITZ IMPORTS" or "RETURN PROCESSOR",
-			World.white, 221, 32, Vector3.new(0, 2.4, 0), 90)
-	end
-
-	local wallHeight, thickness = 18, World.wallThickness
-	for _, side in ipairs({ -1, 1 }) do
-		local edgeX, edgeZ = side * (halfX - thickness / 2), side * (halfZ - thickness / 2)
-		World.part(map, "Perimeter wall", Vector3.new(2 * halfX, wallHeight, thickness),
-			CFrame.new(0, wallHeight / 2, edgeZ), brown, flat)
-		World.part(map, "Perimeter wall", Vector3.new(thickness, wallHeight, 2 * halfZ),
-			CFrame.new(edgeX, wallHeight / 2, 0), brown, flat)
-		detail("Wall coping", 2 * halfX, 0.85, 3.5, 0, wallHeight, edgeZ, coping, flat)
-		detail("Wall coping", 3.5, 0.85, 2 * halfZ, edgeX, wallHeight, 0, coping, flat)
-		for x = -120, 120, 24 do
-			detail("Wall pilaster", 1.25, wallHeight, 0.4, x, wallHeight / 2, edgeZ - side * 1.6, coping, flat)
-		end
-		for z = -80, 80, 20 do
-			detail("Wall pilaster", 0.4, wallHeight, 1.25, edgeX - side * 1.6, wallHeight / 2, z, coping, flat)
-		end
-	end
-
-	for _, side in ipairs({ -1, 1 }) do
-		local lane = side * 25
-		detail("Evacuation path", beltLength, 0.06, 6, 0, 0.03, lane, cream, flat)
-		for x = beltStart + 5, beltEnd - 5, 6 do
-			detail("Evacuation lane marker", 3, 0.06, 0.26, x, 0.065, lane, teal)
-		end
-		for _, x in ipairs({ -World.plotSpacing, 0, World.plotSpacing }) do
-			detail("Safehouse approach", 9, 0.06, 12, x, 0.035, side * 33, cream, flat)
-		end
-		for _, x in ipairs({ -110, -41, 41, 110 }) do
-			local z = side * 31
-			detail("Street lamp post", 0.45, 10, 0.45, x, 5, z, World.steel, flat)
-			detail("Street lamp arm", 0.5, 0.45, 3.4, x, 9.8, z - side * 1.35, World.steel, flat)
-			detail("Street lamp diffuser", 1.35, 0.3, 1.65, x, 9.52, z - side * 2.6, cream, glow)
-			detail("Harbor banner", 2.4, 3.5, 0.16, x + 1.3, 6.7, z, side < 0 and teal or vermilion)
-			detail("Banner crossbar", 2.8, 0.16, 0.25, x + 1.2, 8.5, z, World.steel, flat)
-		end
-		for _, x in ipairs({ -41, 41 }) do
-			local z = side * 53
-			for offset = -7, 7, 7 do
-				detail("Decorative fence post", 0.45, 2.7, 0.45, x, 1.35, z + offset, coping, flat)
-			end
-			for _, y in ipairs({ 0.95, 2.15 }) do
-				detail("Decorative fence rail", 0.24, 0.25, 14.4, x, y, z, cream, flat)
-			end
-			detail("Cargo crate", 3.4, 3.4, 3.4, x + 5, 1.7, z + side * 4, coping, flat)
-			detail("Crate brace", 0.3, 4.25, 0.13, x + 5, 1.7, z + side * 4 - 1.74, cream, flat, 0.75)
-			detail("Cargo barrel", 2.7, 2.1, 2.1, x - 5, 1.35, z, vermilion, flat, math.pi / 2, Enum.PartType.Cylinder)
-			for _, y in ipairs({ 0.5, 2.2 }) do
-				detail("Barrel hoop", 0.22, 2.18, 2.18, x - 5, y, z, World.steel, flat, math.pi / 2, Enum.PartType.Cylinder)
-			end
-		end
-		for _, x in ipairs({ -111, -41, 41, 111 }) do
-			local z = side * 78
-			detail("Palm trunk", 1.3, 10, 1.3, x, 5, z, brown, flat, 0.12)
-			for leaf = 0, 5 do
-				local azimuth = leaf * math.pi / 3
-				local frond = detail("Palm frond", 6.5, 0.55, 2.15, x, 10.6, z,
-					Color3.fromRGB(48, 150 + 12 * (leaf % 3), 69), nil, 0, Enum.PartType.Ball)
-				frond.CFrame *= CFrame.Angles(0, azimuth, 0) * CFrame.new(2.5, -0.2, 0) * CFrame.Angles(0, 0, -0.22)
-			end
-			for offset = -4, 4, 4 do
-				detail("Shrub", 4.7, 2.75, 3.4, x + offset, 1.3, z + 3, Color3.fromRGB(53, 153, 68),
-					Enum.Material.SmoothPlastic, 0, Enum.PartType.Ball)
-			end
-		end
-		local post = detail("Wayfinding post", 0.45, 4.5, 0.45, 17, 2.25, side * 30, World.steel, flat)
-		World.sign(post, "SAFEHOUSES", World.aqua, 133, 26, Vector3.new(0, 2.4, 0), 38)
-		for x = -105, 105, 35 do
-			detail("Wake stripe", 12, 0.05, 0.45, x, -3.96, side * (halfZ + 17 + math.abs(x) % 12),
-				Color3.fromRGB(169, 235, 255))
-		end
-	end
-
-	-- Keep the round-three harbor backdrop outside the playable perimeter.
-	local function backdrop(name, sx, sy, sz, x, y, z, color, material, angle)
-		return detail(name, sx, sy, sz, x, y, z + halfZ - 48, color, material, angle)
-	end
-	backdrop("Cargo wharf", 105, 1.8, 33, -47, -1.1, 72, teal, Enum.Material.SmoothPlastic)
-	for x = -94, -4, 10 do
-		backdrop("Wharf piling", 1.8, 7, 1.8, x, -2.8, 86, World.steel, Enum.Material.SmoothPlastic)
-		backdrop("Wharf deck seam", 0.2, 0.05, 29, x, -0.18, 72, World.steel)
-	end
-	backdrop("Customs warehouse", 33, 12, 15, -73, 6, 76, cream, Enum.Material.SmoothPlastic)
-	for _, side in ipairs({ -1, 1 }) do
-		backdrop("Warehouse cladding", 0.42, 11.8, 15.2, -73 + side * 16.4, 6, 76, teal, flat)
-		backdrop("Warehouse roof", 18, 0.65, 17, -73 + side * 8.5, 13.45, 76, teal, flat, -side * 0.17)
-	end
-	for _, x in ipairs({ -82, -64 }) do
-		backdrop("Loading door frame", 10.2, 8.5, 0.45, x, 4.25, 68.4, teal, flat)
-		backdrop("Loading roller door", 8.8, 7.2, 0.48, x, 3.6, 68.15, World.steel, flat)
-		for y = 1, 7 do
-			backdrop("Door slat", 8.7, 0.12, 0.12, x, y, 67.86, cream, flat)
-		end
-	end
-	local fascia = backdrop("Customs fascia", 16, 2.5, 0.35, -73, 10, 68.3, teal, flat)
-	World.surfaceSign(fascia, "BLITZ CUSTOMS", World.white)
-
-	for _, cargo in ipairs({
-		{ -46, 3, 74, vermilion }, { -30, 3, 74, teal },
-		{ -38, 9, 74, World.gold }, { -15, 3, 81, Color3.fromRGB(87, 136, 239) },
-	}) do
-		local x, y, z, color = table.unpack(cargo)
-		backdrop("Freight container", 15.6, 6, 7.4, x, y, z, color, flat)
-		for offset = -7, 7 do
-			backdrop("Container rib", 0.18, 5.6, 0.22, x + offset, y, z - 3.76, color:Lerp(World.ink, 0.26), flat)
-		end
-		for _, side in ipairs({ -1, 1 }) do
-			backdrop("Container frame", 15.8, 0.25, 7.55, x, y + side * 2.87, z, color:Lerp(World.white, 0.22), flat)
-		end
-	end
-
-	backdrop("Crane pedestal", 7, 1.5, 7, -10, 0.55, 67, World.steel, flat)
-	for _, side in ipairs({ -1, 1 }) do
-		backdrop("Crane tower upright", 0.75, 24, 2, -10 + side * 1.6, 12.8, 67, World.gold, flat)
-	end
-	for y = 3, 23, 4 do
-		backdrop("Crane lattice", 5.2, 0.32, 1.2, -10, y, 67, World.gold, flat, y % 8 == 3 and 0.78 or -0.78)
-	end
-	backdrop("Crane boom", 38, 1.6, 2.3, -20, 24.8, 67, World.gold, flat)
-	backdrop("Crane boom stay", 24, 0.38, 0.55, -20, 27, 67, World.steel, flat, -0.18)
-	backdrop("Crane operator cab", 4, 3, 3.3, -7, 22, 67, teal, flat)
-	backdrop("Crane cab window", 3.3, 1.95, 0.15, -7, 22.2, 65.27, Color3.fromRGB(137, 219, 240), flat)
-	backdrop("Crane hoist cable", 0.17, 10, 0.17, -32, 19, 67, World.ink, flat)
-	backdrop("Crane hook", 1.15, 0.65, 0.7, -32, 13.75, 67, World.gold, flat)
-	return map, belt
+	perimeter(parent)
+	machine(parent,-121,1,"BLITZ IMPORTS")
+	machine(parent,121,-1,"RETURN PROCESSOR")
+	decorate(parent)
+	harbor(parent)
+	return parent
 end
 
 return World

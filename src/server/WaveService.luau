@@ -1,58 +1,58 @@
-local World = require(script.Parent.World)
+local Players = game:GetService("Players")
 local Base = require(script.Parent.BaseService)
-local sweepEdge = World.islandHalfX + 12
-local waveWidth = 2 * (World.islandHalfZ + 2)
+local Steal = require(script.Parent.StealService)
+local World = require(script.Parent.World)
 local Wave = {}
-Wave.__index = Wave
+local V = Vector3.new
 
-function Wave.new(map)
-	workspace:SetAttribute("WavePhase", "CLEAR")
-	workspace:SetAttribute("WaveAt", workspace:GetServerTimeNow() + 52)
-	return setmetatable({ map = map, phase = "CLEAR", at = workspace:GetAttribute("WaveAt"), hit = {} }, Wave)
-end
-
-function Wave:setPhase(phase, at)
-	self.phase = phase
-	self.at = at
-	workspace:SetAttribute("WavePhase", phase)
-	workspace:SetAttribute("WaveAt", at)
-end
-
-function Wave:step(now, states, notify)
-	if self.phase == "CLEAR" and now >= self.at then
-		self:setPhase("EVACUATE", now + 14)
-		for player in pairs(states) do
-			notify(player, "Tsunami incoming! Reach your safehouse.", "warning")
+function Wave.start(parent,plots,notice,started)
+	local water = World.part(parent,"Tsunami wall",V(11,16,200),V(-146,8,0),
+		Color3.fromRGB(35,172,235),Enum.Material.Glass,false,1)
+	local crest = World.part(parent,"Tsunami crest",V(12,2,200),V(-146,16,0),
+		World.aqua,Enum.Material.Neon,false,1)
+	local nextWave = started+52
+	local sweepStart
+	local touched = {}
+	return function(now)
+		if not sweepStart and now >= nextWave then
+			notice:FireAllClients("Tsunami incoming! Reach your safehouse.",14)
+			sweepStart = nextWave+14
+			table.clear(touched)
 		end
-	elseif self.phase == "EVACUATE" and now >= self.at then
-		local wall = World.part(self.map, "Tsunami wall", Vector3.new(11, 16, waveWidth), CFrame.new(-sweepEdge, 7, 0), Color3.fromRGB(43, 171, 237))
-		wall.CanCollide = false
-		local crest = World.part(self.map, "Tsunami crest", Vector3.new(12, 2, waveWidth), wall.CFrame * CFrame.new(0, 8, 0), Color3.fromRGB(158, 239, 255), Enum.Material.Neon)
-		crest.CanCollide = false
-		self.wall, self.crest = wall, crest
-		self:setPhase("WAVE ACTIVE", now + 8)
-	elseif self.wall then
-		local x = -sweepEdge + math.clamp(1 - (self.at - now) / 8, 0, 1) * (2 * sweepEdge)
-		self.wall.CFrame = CFrame.new(x, 7, 0)
-		self.crest.CFrame = self.wall.CFrame * CFrame.new(0, 8, 0)
-		for player, state in pairs(states) do
-			local root = World.aliveRoot(player)
-			if root and not self.hit[player] and math.abs(root.Position.X - x) <= 8 and math.abs(root.Position.Z) <= World.islandHalfZ then
-				self.hit[player] = true
-				if Base.isSheltered(state.base, root.Position) then
-					notify(player, "Safehouse held. Your collection is safe.", "success")
+		if not sweepStart or now < sweepStart then
+			return
+		end
+		local fraction = math.min((now-sweepStart)/8,1)
+		local x = -146+292*fraction
+		water.Position, crest.Position = V(x,8,0),V(x,16,0)
+		water.Transparency, crest.Transparency = 0.29,0.12
+		for _, player in Players:GetPlayers() do
+			local root = Steal.root(player)
+			if not root or touched[player] then
+				continue
+			end
+			local pos = root.Position
+			if math.abs(pos.Z) <= 100 and math.abs(pos.X-x) <= 8 then
+				touched[player] = true
+				local sheltered = false
+				for _, plot in plots do
+					if Base.isSheltered(plot,pos) then
+						sheltered = true
+						break
+					end
+				end
+				if sheltered then
+					notice:FireClient(player,"Safehouse held.",3)
 				else
-					notify(player, "Swept away! Get inside your safehouse next time.", "warning")
-					player.Character:FindFirstChildOfClass("Humanoid").Health = 0
+					root.Parent:FindFirstChildOfClass("Humanoid").Health = 0
+					notice:FireClient(player,"Swept away!",3)
 				end
 			end
 		end
-		if now >= self.at then
-			self.wall:Destroy()
-			self.crest:Destroy()
-			self.wall, self.crest = nil, nil
-			table.clear(self.hit)
-			self:setPhase("CLEAR", now + 54)
+		if fraction == 1 then
+			water.Transparency, crest.Transparency = 1,1
+			nextWave = sweepStart+8+54
+			sweepStart = nil
 		end
 	end
 end

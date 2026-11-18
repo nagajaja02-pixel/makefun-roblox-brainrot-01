@@ -1,320 +1,322 @@
+local Data = require(game:GetService("ReplicatedStorage"):WaitForChild("BrainrotData"))
 local World = require(script.Parent.World)
 local Models = {}
-
+local V = Vector3.new
 local rgb = Color3.fromRGB
-local ink, ivory, gold = World.ink, World.white, World.gold
-local silver = rgb(177, 202, 213)
-local rose = rgb(244, 96, 110)
-local black = rgb(0, 0, 0)
-local green = rgb(117, 255, 103)
-local brown = rgb(113, 65, 42)
-local ball = Enum.PartType.Ball
-local tube = Enum.PartType.Cylinder
+local ink, white, gold = World.ink, World.white, World.gold
+local wood = rgb(118,65,41)
+local silver = rgb(192,208,217)
+local pink = rgb(255,142,179)
+local shapes = Enum.PartType
 local neon = Enum.Material.Neon
 
--- The sculpts face -Z and share a floor plane. Cylinders run along local X.
-local cast = {}
-
-cast.sahur = function(p, face, hue)
-	p("Carved timber", 1.48, 2.72, 1.3, 0, 2.17, 0, hue)
-	p("End grain", 1.3, 0.12, 1.12, 0, 3.57, 0, brown)
-	for _, side in ipairs({ -1, 1 }) do
-		p("Wood grain", 0.07, 1.54, 0.04, side * 0.59, 1.87, -0.66, brown, nil, side * 0.08)
-		p("Arm", 0.27, 1.22, 0.32, side * 0.91, 1.62, 0, hue, ball, side * 0.34)
-		p("Leg", 0.31, 0.94, 0.37, side * 0.43, 0.63, 0, hue)
-		p("Foot", 0.5, 0.31, 0.76, side * 0.43, 0.17, -0.17, hue, ball)
+local function face(p, y, z, spacing, mood)
+	for _, side in {-1,1} do
+		local x = spacing*side
+		p("Eye",x,y,z,0.37,0.46,0.22,white,shapes.Ball)
+		p("Pupil",x+0.035,y-0.025,z-0.105,0.17,0.24,0.11,ink,shapes.Ball)
+		p("Catchlight",x+0.065,y+0.025,z-0.158,0.065,0.065,0.04,white,shapes.Ball)
+		p("Brow",x,y+0.31,z,0.35,0.09,0.12,ink,nil,side*mood)
 	end
-	p("Drum beater", 0.27, 1.75, 0.27, 1.42, 1.45, -0.23, brown, nil, 0.48)
-	p("Beater head", 0.48, 0.65, 0.5, 1.03, 2.24, -0.23, gold, ball, 0.48)
-	face(0, 2.69, -0.66, 0.34, 0.74, 0.03, 0.23, 0.35)
+	p("Mouth",0,y-0.34,z-0.02,0.38,mood > 0 and 0.08 or 0.16,0.12,ink,shapes.Ball)
 end
 
-cast.boneca = function(p, face, hue)
-	p("Tire", 0.85, 2.08, 2.08, 0, 1.56, 0, ink, tube).Orientation = Vector3.new(0, 90, 0)
-	p("Rim", 0.22, 1.18, 1.18, 0, 1.56, -0.44, silver, tube).Orientation = Vector3.new(0, 90, 0)
-	p("Frog head", 2.17, 1.15, 1.35, 0, 2.65, -0.15, hue, ball)
-	for _, side in ipairs({ -1, 1 }) do
-		p("Eye bulge", 0.8, 0.8, 0.7, side * 0.55, 3.08, -0.45, hue, ball)
-		p("Long leg", 0.36, 1.22, 0.39, side * 0.79, 0.73, -0.02, rgb(215, 162, 118), ball, side * 0.27)
-		p("Foot", 0.56, 0.29, 0.78, side * 0.96, 0.16, -0.21, rgb(215, 162, 118), ball)
+local function feet(p, color, separation, y, z, size)
+	for _, side in {-1,1} do
+		p("Foot",separation*side,y,z,size,2*y,size*1.4,color,shapes.Ball)
 	end
-	face(0, 2.98, -0.81, 0.54, 0.83, -0.03, 0.1, 0.21)
 end
 
-cast.trippi = function(p, face, hue)
-	for step = 0, 4 do
-		local size = 1.45 - step * 0.19
-		p("Shrimp segment", size, size * 0.78, 0.87, 0, 0.73 + step * step * 0.065,
-			-0.26 + step * 0.43, hue:Lerp(rose, step * 0.14), ball)
-	end
-	p("Cat head", 1.74, 1.4, 1.3, 0, 1.72, -0.76, ivory, ball)
-	for _, side in ipairs({ -1, 1 }) do
-		p("Pointed ear", 0.53, 0.63, 0.31, side * 0.59, 2.31, -0.79, hue, nil, side * 0.45)
-		p("Tail fan", 0.59, 0.16, 0.85, side * 0.24, 1.94, 1.7, rose, ball, side * 0.32)
-		p("Whisker", 0.48, 0.05, 0.06, side * 0.72, 1.57, -1.34, brown, nil, side * 0.18)
-	end
-	face(0, 1.86, -1.39, 0.37, 0.76, 0.05, 0.17, 0.24)
-end
-
-cast.lirili = function(p, face, hue)
-	p("Cactus body", 1.59, 2.29, 1.34, 0, 1.65, 0, hue, ball)
-	p("Elephant head", 1.55, 1.25, 1.34, 0, 2.84, -0.34, silver, ball)
-	p("Trunk", 0.34, 1.13, 0.4, 0, 2.36, -1.05, silver, ball, -0.26)
-	for _, side in ipairs({ -1, 1 }) do
-		p("Elephant ear", 0.94, 1.19, 0.36, side * 0.84, 2.84, -0.27, silver, ball, side * 0.36)
-		p("Cactus rib", 0.16, 1.22, 0.17, side * 0.39, 1.53, -0.54, hue:Lerp(ink, 0.25), ball)
-		p("Sandal sole", 0.69, 0.19, 1.2, side * 0.49, 0.1, -0.22, brown)
-		p("Sandal strap", 0.66, 0.2, 0.32, side * 0.49, 0.27, -0.39, gold)
-		p("Foot", 0.56, 0.64, 0.83, side * 0.49, 0.43, -0.06, silver, ball)
-	end
-	face(0, 2.98, -0.98, 0.34, 0.66, -0.04, -0.12, 0.13)
-end
-
-cast.frigo = function(p, face, hue)
-	p("Refrigerator", 1.73, 2.28, 1.39, 0, 1.63, 0.24, hue)
-	p("Freezer door", 1.65, 0.61, 0.18, 0, 2.39, -0.5, ivory)
-	p("Fridge door", 1.65, 1.43, 0.18, 0, 1.33, -0.5, ivory)
-	p("Door handle", 0.11, 0.54, 0.14, -0.61, 1.6, -0.65, silver)
-	p("Camel neck", 0.62, 1.56, 0.59, 0.47, 2.56, -0.55, gold, ball, -0.29)
-	p("Camel head", 1.12, 0.88, 1.14, 0.59, 3.36, -0.71, gold, ball)
-	p("Muzzle", 0.77, 0.47, 0.69, 0.59, 3.14, -1.18, brown, ball)
-	for _, side in ipairs({ -1, 1 }) do
-		p("Camel ear", 0.28, 0.44, 0.26, 0.59 + side * 0.35, 3.75, -0.66, gold, ball, side * 0.38)
-		p("Work boot", 0.65, 0.47, 1.04, side * 0.55, 0.24, 0.02, brown, ball)
-	end
-	face(0.59, 3.47, -1.22, 0.22, 0.47, 0.02, -0.18, 0.14)
-end
-
-cast.banana = function(p, face, hue)
-	p("Banana middle", 1.34, 2.26, 1.19, 0, 1.25, 0, hue, ball)
-	p("Monkey head", 1.62, 1.43, 1.19, 0, 2.53, -0.15, brown, ball)
-	p("Monkey muzzle", 1.02, 0.54, 0.53, 0, 2.23, -0.62, rgb(221, 158, 111), ball)
-	for _, side in ipairs({ -1, 1 }) do
-		p("Ear", 0.51, 0.59, 0.4, side * 0.77, 2.59, -0.17, brown, ball)
-		p("Banana peel", 0.58, 1.65, 0.51, side * 0.67, 1.34, -0.31, hue, ball, side * 0.6)
-		p("Monkey foot", 0.62, 0.3, 0.8, side * 0.44, 0.16, -0.16, brown, ball)
-	end
-	p("Banana stem", 0.25, 0.46, 0.3, 0, 0.28, 0.55, brown, ball, 0.43)
-	face(0, 2.67, -0.71, 0.35, 0.74, 0.08, 0.22, 0.38)
-end
-
-cast.patapim = function(p, face, hue)
-	p("Knotted trunk", 1.83, 2.45, 1.22, 0, 1.94, 0.11, brown, ball)
-	p("Moss canopy", 2.52, 1.26, 1.52, 0, 3.28, 0.14, hue, ball)
-	p("Long nose", 0.47, 0.48, 0.98, 0, 2.47, -0.76, gold, ball)
-	for _, side in ipairs({ -1, 1 }) do
-		p("Branch arm", 0.43, 1.64, 0.47, side * 1.06, 1.67, 0, brown, ball, side * 0.33)
-		p("Moss tuft", 0.98, 0.63, 0.8, side * 0.91, 2.99, -0.25, hue, ball)
-		p("Oversized root foot", 1.03, 0.59, 1.53, side * 0.68, 0.29, -0.45, brown, ball)
-	end
-	face(0, 2.72, -0.54, 0.44, 0.85, -0.08, 0.24, 0.17)
-end
-
-local function cup(p, y, hue)
-	p("Porcelain cup", 1.08, 1.6, 1.45, 0, y, 0, hue, tube, math.pi / 2)
-	p("Cup rim", 0.13, 1.69, 1.53, 0, y + 0.56, 0, ivory, tube, math.pi / 2)
-	p("Coffee", 0.06, 1.46, 1.27, 0, y + 0.64, 0, brown, tube, math.pi / 2)
-	p("Foam swirl", 0.06, 0.61, 0.4, 0.14, y + 0.68, -0.06, ivory, tube, math.pi / 2)
-	for _, side in ipairs({ -1, 1 }) do
-		p("Handle joint", 0.41, 0.17, 0.31, 0.84, y + side * 0.26, 0, hue)
-	end
-	p("Handle grip", 0.19, 0.61, 0.31, 1.08, y, 0, hue)
-end
-
-cast.ballerina = function(p, face, hue)
-	cup(p, 3.07, ivory)
-	p("Bodice", 1.14, 1.18, 0.75, 0, 1.97, 0, hue, ball)
-	p("Tutu hem", 2.59, 0.33, 1.77, 0, 1.23, 0, hue, ball)
-	p("Tutu top", 1.89, 0.42, 1.39, 0, 1.42, 0, hue:Lerp(ivory, 0.44), ball)
-	for _, side in ipairs({ -1, 1 }) do
-		p("Ballet arm", 0.27, 1.13, 0.27, side * 0.82, 2.03 + side * 0.28, 0, ivory, ball, side * -0.85)
-		p("Ballet leg", 0.24, 1.13, 0.3, side * 0.36, 0.69, 0, ivory, ball, side * 0.29)
-		p("Ribbon slipper", 0.34, 0.36, 0.61, side * 0.48, 0.18, -0.1, hue, ball)
-	end
-	face(0, 3.15, -0.72, 0.34, 0.7, 0.03, 0.02, 0.28)
-end
-
-cast.assassino = function(p, face, hue)
-	cup(p, 2.55, hue)
-	p("Ninja tunic", 1.29, 1.24, 0.78, 0, 1.16, 0, ink, ball)
-	p("Headband", 1.58, 0.55, 0.21, 0, 2.66, -0.65, ink)
-	p("Band tails", 0.73, 0.21, 0.17, -1.06, 2.62, -0.49, rose, nil, -0.28)
-	for _, side in ipairs({ -1, 1 }) do
-		p("Split-toe boot", 0.5, 0.52, 0.7, side * 0.44, 0.27, -0.12, hue, ball)
-		p("Sleeve", 0.39, 0.85, 0.42, side * 0.84, 1.54, -0.06, ink, ball, side * 0.58)
-		p("Foam blade", 0.18, 1.22, 0.13, side * 1.19, 1.98, -0.38, silver, nil, side * -0.36)
-		p("Blade hilt", 0.48, 0.15, 0.22, side * 1.02, 1.52, -0.38, gold, nil, side * -0.36)
-	end
-	face(0, 2.7, -0.79, 0.31, 0.68, 0, -0.44, 0.13)
-end
-
-cast.ananasini = function(p, face, hue)
-	p("Pineapple body", 1.86, 2.03, 1.45, 0, 1.33, 0, hue, ball)
-	p("Orangutan head", 1.62, 1.35, 1.27, 0, 2.72, -0.17, rgb(180, 88, 42), ball)
-	p("Face patch", 1.28, 0.96, 0.54, 0, 2.65, -0.66, gold, ball)
-	for _, side in ipairs({ -1, 1 }) do
-		p("Leaf crown", 0.32, 0.87, 0.33, side * 0.32, 3.48, 0, rgb(81, 174, 93), ball, -side * 0.55)
-		p("Long ape arm", 0.55, 1.73, 0.56, side * 1.08, 1.22, 0, brown, ball, side * 0.28)
-		p("Knuckles", 0.68, 0.43, 0.61, side * 1.29, 0.34, -0.1, brown, ball)
-		for row = 0, 2 do
-			p("Pineapple scale", 0.24, 0.27, 0.09, side * (0.29 + row % 2 * 0.16),
-				0.89 + row * 0.34, -0.66, brown, nil, math.pi / 4)
+local function cup(p, c, dark)
+	p("Cup",0,2.85,0,1.15,1.7,1.7,c,shapes.Cylinder,nil,math.pi/2)
+	p("Lip",0,3.45,0,0.12,1.86,1.86,c,shapes.Cylinder,nil,math.pi/2)
+	p("Coffee",0,3.53,0,0.045,1.65,1.65,wood,shapes.Cylinder,nil,math.pi/2)
+	p("Handle",0.94,2.94,0,0.57,0.55,0.24,c,shapes.Ball)
+	if not dark then
+		for _, x in {-0.21,0,0.21} do
+			p("Foam",x,3.56,0,0.31,0.04,0.68,white,shapes.Ball,nil,x)
 		end
 	end
-	face(0, 2.77, -0.91, 0.33, 0.69, -0.045, 0.2, 0.35)
+	face(p,2.98,-0.82,0.37,dark and 0.36 or -0.15)
 end
 
-cast.tralalero = function(p, face, hue)
-	p("Shark body", 1.79, 1.52, 3.18, 0, 1.54, 0.17, hue, ball)
-	p("Pale belly", 1.57, 0.77, 2.82, 0, 1.25, 0.07, ivory, ball)
-	p("Snout", 1.7, 0.92, 1.25, 0, 1.56, -1.22, hue, ball)
-	p("Dorsal fin", 0.29, 1.05, 0.76, 0, 2.5, 0.15, hue, ball).Orientation = Vector3.new(-22, 0, 0)
-	p("Tail fin", 0.36, 1.37, 0.8, 0, 1.72, 1.64, hue, ball).Orientation = Vector3.new(26, 0, 0)
-	for _, side in ipairs({ -1, 1 }) do
-		p("Side fin", 1.01, 0.25, 0.82, side * 0.91, 1.49, 0.09, hue, ball, side * -0.36)
+local builders = {}
+
+function builders.sahur(p,c)
+	p("Timber body",0,1.98,0,1.65,2.7,1.15,c)
+	for _, x in {-0.62,-0.3,0.26,0.59} do
+		p("Wood grain",x,1.46,-0.58,0.055,1.13,0.025,wood,nil,x*0.12)
 	end
-	for _, offset in ipairs({ Vector3.new(-0.66, 0, -0.56), Vector3.new(0.66, 0, -0.56), Vector3.new(0, 0, 0.97) }) do
-		local x, z = offset.X, offset.Z
-		p("Shark leg", 0.4, 0.91, 0.45, x, 0.69, z, hue, ball)
-		p("Sneaker sole", 0.68, 0.2, 1.01, x, 0.13, z - 0.15, ivory, ball)
-		p("Blue sneaker", 0.64, 0.39, 0.98, x, 0.34, z - 0.15, rgb(52, 102, 223), ball)
-		p("Laces", 0.38, 0.06, 0.24, x, 0.52, z - 0.3, ivory)
+	for _, s in {-1,1} do
+		p("Wood arm",s*1.01,1.88,0,0.36,1.55,0.46,c,nil,s*0.26)
+		p("Wood leg",s*0.44,0.53,0,0.42,0.9,0.48,c)
 	end
-	face(0, 1.75, -1.78, 0.38, 0.68, 0.07, -0.12, 0.24)
+	feet(p,wood,0.46,0.17,-0.2,0.61)
+	p("Mallet handle",1.34,1.9,-0.3,0.21,1.88,0.21,wood,nil,-0.21)
+	p("Mallet head",1.5,2.87,-0.3,0.91,0.47,0.57,gold,shapes.Cylinder)
+	face(p,2.55,-0.59,0.39,-0.2)
 end
 
-cast.bombardiro = function(p, face, hue)
-	p("Aircraft fuselage", 1.04, 1.1, 2.78, 0, 1.65, 0.54, silver, ball)
-	p("Tail stabilizer", 1.56, 0.16, 0.57, 0, 1.98, 1.62, hue)
-	p("Tail fin", 0.19, 0.78, 0.68, 0, 2.4, 1.56, hue, ball)
-	p("Crocodile head", 1.33, 0.95, 1.4, 0, 1.84, -0.56, hue, ball)
-	p("Long snout", 1.12, 0.47, 1.36, 0, 1.59, -1.25, hue, ball)
-	p("Lower jaw", 1, 0.22, 1.18, 0, 1.36, -1.22, gold, ball)
-	for _, side in ipairs({ -1, 1 }) do
-		p("Wing", 1.76, 0.16, 0.93, side * 1.06, 1.71, 0.4, silver).Orientation = Vector3.new(0, side * -16, 0)
-		p("Engine nacelle", 0.48, 0.46, 0.84, side * 1.15, 1.55, 0.16, hue, ball)
-		p("Propeller", 0.91, 0.12, 0.09, side * 1.15, 1.54, -0.29, ink, nil, side * 0.58)
-		p("Tooth", 0.14, 0.22, 0.16, side * 0.4, 1.47, -1.62, ivory, ball)
+function builders.boneca(p,c)
+	p("Tire",0,0.68,0,0.62,1.36,1.36,ink,shapes.Cylinder)
+	for _, s in {-1,1} do
+		p("Rim",s*0.33,0.68,0,0.06,0.79,0.79,silver,shapes.Cylinder)
+		p("Amphibian leg",s*0.65,0.89,0,0.27,1.54,0.34,c,shapes.Ball,s*0.33)
+		p("Eye bump",s*0.45,2.52,-0.19,0.76,0.78,0.73,c,shapes.Ball)
 	end
-	face(0, 2.05, -1.08, 0.33, 0.62, 0.05, -0.33, 0.15)
+	feet(p,c,0.79,0.2,-0.33,0.61)
+	p("Frog head",0,1.99,0,1.95,1.37,1.24,c,shapes.Ball)
+	face(p,2.47,-0.54,0.46,-0.14)
 end
 
-cast.saturnita = function(p, face, hue)
-	p("Planet body", 2.09, 1.94, 1.84, 0, 1.69, 0.15, hue, ball)
-	for i = 1, 20 do
-		local angle = i * math.pi / 10
-		p("Saturn ring", 0.55, 0.16, 0.51, math.cos(angle) * 1.61,
-			1.76 + math.cos(angle) * 0.33, math.sin(angle) * 1.38 + 0.15, gold, ball)
+function builders.trippi(p,c)
+	for index = 0,4 do
+		local size = 1.35-index*0.19
+		p("Shrimp shell",0,0.55+index*0.13,index*0.42,size,size*0.8,size,c:Lerp(pink,index/4),shapes.Ball)
 	end
-	p("Cow head", 1.47, 1.18, 1.02, 0, 2.73, -0.52, ivory, ball)
-	p("Pink muzzle", 1.12, 0.52, 0.53, 0, 2.45, -1, rose, ball)
-	p("Cow patch", 0.73, 0.46, 0.24, -0.44, 1.33, -0.57, ink, ball, 0.36)
-	for _, side in ipairs({ -1, 1 }) do
-		p("Cow ear", 0.62, 0.31, 0.4, side * 0.77, 2.9, -0.44, ink, ball, side * 0.34)
-		p("Horn", 0.26, 0.54, 0.26, side * 0.43, 3.32, -0.39, gold, ball, -side * 0.32)
-		p("Hoof", 0.48, 0.67, 0.54, side * 0.53, 0.34, -0.09, ink, ball)
+	p("Kitten",0,1.49,-0.45,1.62,1.39,1.22,white,shapes.Ball)
+	for _, s in {-1,1} do
+		p("Pointed cat ear",s*0.6,2.13,-0.48,0.46,0.67,0.34,white,nil,s*0.48)
+		p("Tail fan",s*0.31,1.17,1.96,0.55,0.28,0.75,pink,shapes.Ball,s*0.55)
+		for index = 0,2 do
+			p("Whisker",s*0.61,1.29+index*0.12,-1.05,0.61,0.045,0.06,ink,nil,s*(index-1)*0.15)
+		end
 	end
-	face(0, 2.85, -1.04, 0.35, 0.67, 0.025, 0.04, 0.19)
+	feet(p,c,0.43,0.12,-0.6,0.5)
+	face(p,1.62,-1.03,0.32,-0.24)
 end
 
-local function addLabel(pivot, unit, caption)
-	local board = Instance.new("BillboardGui")
-	board.Name = "Brainrot label"
-	board.Size = UDim2.fromOffset(186, 79)
-	board.StudsOffsetWorldSpace = Vector3.new(0, 4.25, 0)
-	board.MaxDistance = 38
-	board.AlwaysOnTop = true
-	board.Parent = pivot
-	local stack = Instance.new("Frame")
-	stack.Name = "Stack"
-	stack.Size = UDim2.fromScale(1, 1)
-	stack.BackgroundTransparency = 1
-	stack.Parent = board
+function builders.lirili(p,c)
+	p("Cactus torso",0,1.14,0,1.35,1.86,1.19,c,shapes.Ball)
+	for _, x in {-0.43,-0.21,0.21,0.43} do
+		p("Rib",x,1.05,-0.52,0.085,0.93,0.09,c:Lerp(ink,0.28),shapes.Ball)
+	end
+	p("Elephant head",0,2.36,0,1.52,1.27,1.35,silver,shapes.Ball)
+	for _, s in {-1,1} do
+		p("Elephant ear",s*0.78,2.39,0.04,0.86,1.05,0.36,silver,shapes.Ball)
+		p("Foot",s*0.46,0.28,-0.25,0.6,0.35,0.89,silver,shapes.Ball)
+	end
+	feet(p,wood,0.47,0.11,-0.27,0.67)
+	p("Trunk",0,1.99,-0.89,0.35,0.79,0.36,silver,shapes.Ball,nil,-0.15)
+	p("Trunk tip",0.09,1.66,-1.07,0.39,0.22,0.43,silver,shapes.Ball)
+	face(p,2.52,-0.63,0.34,-0.15)
+end
 
-	local function line(text, color, y, height, size)
+function builders.frigo(p,c)
+	p("Refrigerator",0,1.23,0,1.52,1.89,1.24,c)
+	for _, y in {0.99,1.89} do
+		p("Door",0,y,-0.64,1.36,y < 1 and 1.02 or 0.59,0.15,white)
+		p("Handle",0.47,y,-0.76,0.12,0.33,0.13,silver)
+	end
+	p("Camel neck",0,2.35,0.13,0.48,0.93,0.62,gold,shapes.Ball)
+	p("Camel head",0,2.94,-0.14,1.03,0.78,1.33,gold,shapes.Ball)
+	p("Muzzle",0,2.70,-0.8,0.79,0.4,0.62,wood,shapes.Ball)
+	for _, s in {-1,1} do
+		p("Ear",s*0.36,3.33,0.12,0.23,0.47,0.26,gold,shapes.Ball,s*0.26)
+	end
+	feet(p,ink,0.46,0.19,-0.21,0.61)
+	face(p,3,-0.75,0.26,-0.12)
+end
+
+function builders.banana(p,c)
+	p("Banana",0,1.29,0.03,1.36,2.2,1.05,c,shapes.Ball,nil,-0.15)
+	for _, s in {-1,1} do
+		p("Peel",s*0.75,1.21,-0.07,0.46,1.32,0.53,c,shapes.Ball,s*0.76)
+		p("Round ear",s*0.63,2.26,-0.15,0.49,0.54,0.42,wood,shapes.Ball)
+		p("Leg",s*0.37,0.39,0,0.32,0.73,0.39,wood,shapes.Ball)
+	end
+	feet(p,wood,0.43,0.16,-0.19,0.52)
+	p("Monkey head",0,2.31,-0.18,1.27,1.17,1.07,wood,shapes.Ball)
+	p("Muzzle",0,2.09,-0.69,0.74,0.46,0.35,gold,shapes.Ball)
+	p("Stem",0.12,2.99,0.03,0.21,0.33,0.26,wood,nil,-0.3)
+	face(p,2.41,-0.67,0.28,-0.2)
+end
+
+function builders.patapim(p,c)
+	p("Tree trunk",0,1.48,0,1.44,2.34,1.15,wood)
+	p("Moss canopy",0,2.62,0,2.12,1.47,1.55,c,shapes.Ball)
+	for _, s in {-1,1} do
+		p("Branch arm",s*1.02,1.45,0.04,0.35,1.73,0.45,wood,nil,s*0.47)
+		p("Moss tuft",s*0.79,2.75,0.26,0.98,1.1,0.99,c,shapes.Ball)
+	end
+	feet(p,wood,0.59,0.26,-0.15,0.98)
+	p("Long nose",0,2.32,-1,0.27,0.38,1.21,gold,shapes.Ball)
+	face(p,2.62,-0.73,0.34,-0.18)
+end
+
+function builders.ballerina(p,c)
+	cup(p,white,false)
+	p("Bodice",0,1.77,0,0.91,0.95,0.65,c,shapes.Ball)
+	p("Tutu",0,1.35,0,2,0.39,1.54,c,shapes.Ball)
+	for _, s in {-1,1} do
+		p("Ballet arm",s*0.74,2.04,0,0.24,1.06,0.26,white,shapes.Ball,s*0.99)
+		p("Ballet leg",s*0.25,0.73,0,0.23,1.15,0.28,white)
+		p("Ribbon",s*0.25,0.31,-0.13,0.26,0.12,0.08,c,nil,s*0.39)
+	end
+	feet(p,c,0.25,0.14,-0.13,0.34)
+end
+
+function builders.assassino(p,c)
+	cup(p,c,true)
+	p("Headband",0,3.28,-0.69,1.45,0.2,0.19,pink)
+	for index = 1,2 do
+		p("Ribbon tail",0.91+index*0.12,3.15-index*0.12,0.23,0.2,0.83,0.11,pink,nil,0.73+index*0.24)
+	end
+	p("Ninja tunic",0,1.45,0,1.28,1.32,0.96,ink)
+	for _, s in {-1,1} do
+		p("Sleeve",s*0.79,1.37,-0.04,0.35,1.05,0.43,ink,nil,s*0.24)
+		p("Trouser",s*0.32,0.49,0,0.42,0.9,0.58,ink)
+	end
+	feet(p,ink,0.32,0.17,-0.15,0.56)
+	p("Foam blade",1.31,2.07,-0.19,0.35,1.53,0.14,silver,nil,-0.36)
+	p("Sword guard",1.06,1.34,-0.19,0.61,0.13,0.22,gold,nil,-0.36)
+	p("Sword grip",0.99,1.15,-0.19,0.19,0.39,0.17,gold,nil,-0.36)
+end
+
+function builders.ananasini(p,c)
+	p("Pineapple",0,1.26,0,1.77,2.17,1.4,c,shapes.Ball)
+	for row = 0,3 do
+		for column = -1,1 do
+			local x = column*0.41+(row%2)*0.1
+			p("Pineapple scale",x,0.64+row*0.28,-0.53-math.sqrt(1-x*x)*0.14,0.23,0.23,0.075,gold,nil,math.pi/4)
+		end
+	end
+	p("Orangutan head",0,2.51,-0.04,1.57,1.14,1.16,wood,shapes.Ball)
+	p("Face patch",0,2.43,-0.52,1.15,0.84,0.32,gold,shapes.Ball)
+	for index = -2,2 do
+		p("Crown leaf",index*0.22,3.29,0.13,0.26,0.89,0.29,rgb(72,168,82),shapes.Ball,-index*0.31)
+	end
+	for _, s in {-1,1} do
+		p("Long arm",s*1.03,1.28,0,0.47,1.75,0.54,wood,shapes.Ball,s*0.32)
+		p("Knuckles",s*1.23,0.53,-0.08,0.59,0.48,0.64,wood,shapes.Ball)
+	end
+	feet(p,wood,0.45,0.15,-0.21,0.57)
+	face(p,2.55,-0.67,0.28,-0.2)
+end
+
+function builders.tralalero(p,c)
+	p("Shark body",0,1.62,0.23,1.54,1.49,2.94,c,shapes.Ball)
+	p("White belly",0,1.34,0.15,1.43,0.84,2.65,white,shapes.Ball)
+	p("Snout",0,1.66,-1.01,1.35,0.68,0.95,c,shapes.Ball)
+	p("Dorsal fin",0,2.45,0.33,0.23,1.02,0.87,c,shapes.Ball,nil,0,-0.36)
+	p("Tail fin",0,1.63,1.69,0.31,1.45,0.69,c,shapes.Ball,nil,0,0.34)
+	for _, s in {-1,1} do
+		p("Side fin",s*0.81,1.53,0.33,1.09,0.25,0.64,c,shapes.Ball,s*0.27)
+	end
+	for _, step in {{-0.56,-0.49},{0.56,-0.49},{0,0.98}} do
+		local x,z = step[1],step[2]
+		p("Shark leg",x,0.74,z,0.38,0.95,0.43,c)
+		p("Sneaker",x,0.27,z-0.14,0.65,0.49,0.91,rgb(56,107,224),shapes.Ball)
+		p("Sole",x,0.075,z-0.19,0.67,0.15,0.9,white)
+		for index = 0,2 do
+			p("Lace",x,0.46,z-0.25+index*0.09,0.33,0.046,0.04,white)
+		end
+	end
+	face(p,1.9,-1.38,0.32,0.26)
+end
+
+function builders.bombardiro(p,c)
+	p("Fuselage",0,1.34,0.25,1.43,1.4,3.51,silver,shapes.Ball)
+	p("Tailplane",0,1.58,1.83,1.81,0.2,0.71,silver)
+	p("Tail",0,2.01,1.69,0.25,1.11,0.87,silver,shapes.Ball)
+	p("Wings",0,1.26,0.28,4.49,0.24,1.27,silver)
+	p("Crocodile head",0,2.03,-0.71,1.29,0.94,1.24,c,shapes.Ball)
+	p("Long muzzle",0,1.9,-1.61,1.1,0.46,1.51,c,shapes.Ball)
+	p("Lower jaw",0,1.56,-1.62,1.02,0.25,1.49,gold,shapes.Ball)
+	for _, s in {-1,1} do
+		p("Engine",s*1.51,1.03,0.11,0.6,0.59,0.95,c,shapes.Ball)
+		p("Propeller",s*1.51,1.05,-0.49,0.14,1.11,0.13,ink,nil,s*0.65)
+		p("Propeller hub",s*1.51,1.05,-0.56,0.23,0.23,0.23,gold,shapes.Ball)
+		for index = 0,3 do
+			p("Tooth",s*0.39,1.72,-1.27-index*0.19,0.12,0.21,0.13,white,shapes.Ball)
+		end
+	end
+	feet(p,ink,0.46,0.17,0.29,0.43)
+	face(p,2.23,-1.23,0.31,0.3)
+end
+
+function builders.saturnita(p,c)
+	p("Saturn body",0,1.53,0.16,2.09,2.09,2.1,c,shapes.Ball)
+	for index = 0,19 do
+		local angle = index*math.pi/10
+		local frame = CFrame.new(0,1.58,0.16)*CFrame.Angles(0,0,0.22)
+			*CFrame.Angles(0,angle,0)*CFrame.new(1.54,0,0)
+		p("Saturn ring",0,0,0,0.48,0.13,0.54,gold,nil,nil,nil,nil,frame)
+	end
+	p("Cow head",0,2.27,-0.88,1.55,1.25,1.06,white,shapes.Ball)
+	p("Pink muzzle",0,1.96,-1.39,1.14,0.49,0.55,pink,shapes.Ball)
+	p("Cow patch",0.43,2.46,-1.28,0.49,0.54,0.19,ink,shapes.Ball)
+	for _, s in {-1,1} do
+		p("Cow ear",s*0.84,2.42,-0.88,0.63,0.3,0.38,pink,shapes.Ball,s*0.39)
+		p("Horn",s*0.46,2.92,-0.87,0.22,0.43,0.24,gold,shapes.Ball,-s*0.31)
+		for _, z in {-0.49,0.68} do
+			p("Leg",s*0.58,0.43,z,0.34,0.68,0.36,white)
+			p("Hoof",s*0.58,0.16,z,0.48,0.32,0.52,ink)
+		end
+	end
+	face(p,2.48,-1.36,0.34,-0.18)
+end
+
+local function billboard(root, offer)
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "Brainrot label"
+	gui.Size = UDim2.fromOffset(186,79)
+	gui.StudsOffsetWorldSpace = V(0,4.25,0)
+	gui.MaxDistance = 38
+	gui.AlwaysOnTop = true
+	gui.Parent = root
+	local rarity = Data.rarities[offer.character.tier]
+	local function row(text, y, height, size, color, font)
 		local label = Instance.new("TextLabel")
-		label.Size = UDim2.new(1, 0, 0, height)
-		label.Position = UDim2.fromOffset(0, y)
+		label.Position = UDim2.fromOffset(0,y)
+		label.Size = UDim2.new(1,0,0,height)
 		label.BackgroundTransparency = 1
 		label.Text = text
-		label.TextColor3 = color
 		label.TextSize = size
-		label.Font = Enum.Font.GothamBold
-		local outline = Instance.new("UIStroke")
-		outline.Color = black
-		outline.Thickness = 1.6
-		outline.Parent = label
-		label.Parent = stack
-		return label
+		label.TextColor3 = color
+		label.TextStrokeTransparency = 0.2
+		label.Font = font
+		label.Parent = gui
 	end
-
-	if unit.mutation ~= "" then
-		line(unit.mutation, unit.mutation == "Gold" and gold or rgb(176, 245, 255), 0, 14, 12)
+	if offer.mutation then
+		row(offer.mutation,0,14,13,Data.mutations[offer.mutation].color,Enum.Font.GothamBold)
 	end
-	local name = line(unit.entry[1], ivory, 14, 20, 16)
-	name.TextScaled = true
-	local nameSize = Instance.new("UITextSizeConstraint")
-	nameSize.MaxTextSize = 16
-	nameSize.Parent = name
-	line(unit.rarity.name, unit.rarity.color, 34, 15, 13)
-	line(string.format("+$%d/s", unit.rate), green, 49, 15, 13)
-	line(caption, caption:sub(1, 1) == "$" and green or ivory, 64, 15, 13)
+	row(offer.character.name,14,19,14,white,Enum.Font.GothamBold)
+	row(rarity.name,33,15,13,rarity.color,Enum.Font.GothamBold)
+	row(("+$%d/s"):format(offer.rate),48,16,14,rgb(126,249,182),Enum.Font.GothamBold)
+	row(offer.character.caption,64,15,12,white,Enum.Font.Gotham)
 end
 
-function Models.sculpt(parent, unit, pose, caption)
+function Models.create(offer, parent, pose)
 	local model = Instance.new("Model")
-	model.Name = unit.entry[1]
-	local mutation = unit.mutation
-	local diamond = mutation == "Diamond"
-	local hue = mutation == "Gold" and gold or diamond and rgb(122, 225, 255) or unit.entry[6]
-	local function piece(name, sx, sy, sz, x, y, z, color, shape, tilt, material)
-		local part = World.part(model, name, Vector3.new(sx, sy, sz),
-			CFrame.new(x, y, z) * CFrame.Angles(0, 0, tilt or 0), color, material, shape)
-		part.CanCollide = false
-		part.CanTouch = false
-		part.CanQuery = false
+	model.Name = offer.character.name
+	local root = World.part(model,"Pivot",V(0.2,0.2,0.2),V(0,0,0),ink,nil,false,1)
+	model.PrimaryPart = root
+	local function piece(name,x,y,z,sx,sy,sz,color,shape,roll,pitch,material,frame)
+		local offset = frame or CFrame.new(x,y,z)*CFrame.Angles(pitch or 0,0,roll or 0)
+		local part = World.part(model,name,V(sx,sy,sz),offset,color,material,false)
+		part.Shape = shape or shapes.Block
+		part.Massless = true
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = root
+		weld.Part1 = part
+		weld.Parent = part
+		part.Anchored = false
 		return part
 	end
-	-- Gaze, brow angle and mouth opening set each character's expression.
-	local function face(x, y, z, spread, scale, gaze, brow, mouth)
-		for _, side in ipairs({ -1, 1 }) do
-			local eyeX = x + side * spread
-			local eyeY = y + side * gaze * 0.37
-			local pupilX = eyeX + gaze
-			piece("Eye white", 0.66 * scale, 0.7 * scale, 0.27, eyeX, eyeY, z, ivory, ball)
-			piece("Pupil", 0.32 * scale, 0.4 * scale, 0.17, pupilX, eyeY, z - 0.12, ink, ball)
-			piece("Eye highlight", 0.12 * scale, 0.12 * scale, 0.06,
-				pupilX - 0.055 * scale, eyeY + 0.09 * scale, z - 0.2, ivory, ball)
-			piece("Brow", 0.51 * scale, 0.14 * scale, 0.16,
-				eyeX, eyeY + 0.41 * scale, z - 0.02, ink, ball, side * brow)
+	local mutation = offer.mutation and Data.mutations[offer.mutation]
+	builders[offer.character.key](piece,mutation and mutation.color or offer.character.color)
+	if offer.mutation == "Diamond" then
+		for _, s in {-1,1} do
+			piece("Diamond crystal",s*0.96,0.37,0.43,0.31,0.58,0.31,mutation.color,nil,s*0.47,nil,neon)
 		end
-		local mouthY = y - (0.35 + mouth * 0.27) * scale
-		piece("Mouth", (0.82 - mouth * 0.63) * scale, mouth * scale, 0.18,
-			x, mouthY, z - 0.035, ink, ball, gaze * 1.45)
-		if mouth >= 0.3 then
-			piece("Tongue", 0.28 * scale, 0.12 * scale, 0.09,
-				x, mouthY - mouth * 0.21 * scale, z - 0.11, rose, ball)
-		end
+	elseif offer.mutation == "Gold" then
+		local sparkles = Instance.new("Sparkles")
+		sparkles.SparkleColor = gold
+		sparkles.Parent = root
 	end
-
-	-- Preserve the existing conveyor, carry and prompt reference point across all body shapes.
-	cast[unit.entry[5]](piece, face, hue)
-	local pivot = model:FindFirstChildWhichIsA("BasePart")
-	pivot.PivotOffset = pivot.CFrame:ToObjectSpace(CFrame.new(0, 2.05, 0))
-	model.PrimaryPart = pivot
-	if mutation ~= "" then
-		local shine = diamond and rgb(176, 245, 255) or rgb(255, 220, 112)
-		for _, side in ipairs({ -1, 1 }) do
-			piece(diamond and "Diamond crystal" or "Gold sparkle", diamond and 0.23 or 0.37,
-				diamond and 0.72 or 0.37, 0.28, side * 2.04, 2.72 + side * 0.42, -0.3,
-				shine, nil, side * math.pi / 4, neon)
-		end
-	end
-
-	if caption then
-		addLabel(pivot, unit, caption)
-	end
-	model:PivotTo(pose * CFrame.new(0, 2.05, 0))
+	billboard(root,offer)
+	model:PivotTo(pose)
 	model.Parent = parent
 	return model
 end

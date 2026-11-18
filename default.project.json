@@ -2,9 +2,17 @@
   "name": "Brainrot Blitz",
   "tree": {
     "$className": "DataModel",
-    "Players": { "$properties": { "CharacterAutoLoads": false } },
-    "ReplicatedStorage": { "BrainrotData": { "$path": "src/shared/BrainrotData.luau" } },
-    "ServerScriptService": { "BlitzServer": { "$path": "src/server" } },
-    "StarterPlayer": { "StarterPlayerScripts": { "BlitzClient": { "$path": "src/client" } } }
+    "Workspace": {
+      "$properties": { "StreamingEnabled": false }
+    },
+    "ReplicatedStorage": {
+      "BrainrotData": { "$path": "src/shared/BrainrotData.luau" }
+    },
+    "ServerScriptService": {
+      "BrainrotBlitz": { "$path": "src/server" }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": { "$path": "src/client" }
+    }
   }
 }

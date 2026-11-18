@@ -1,155 +1,123 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Data = require(ReplicatedStorage:WaitForChild("BrainrotData"))
-
+local Data = require(game:GetService("ReplicatedStorage"):WaitForChild("BrainrotData"))
 local Menu = {}
-local pink = Color3.fromRGB(213, 54, 136)
-local blue = Color3.fromRGB(37, 114, 204)
-local green = Color3.fromRGB(104, 255, 142)
+local ink = Color3.fromRGB(19,28,48)
+local white = Color3.fromRGB(244,248,255)
+local aqua = Color3.fromRGB(78,255,218)
 
-local function text(parent, className, value, size, position, bounds)
-	local item = Instance.new(className)
-	item.Size = bounds
-	item.Position = position
-	item.BackgroundTransparency = 1
-	item.Text = value
-	item.TextSize = size
-	item.Font = Enum.Font.GothamBlack
-	item.TextColor3 = Color3.new(1, 1, 1)
-	item.TextStrokeColor3 = Color3.new(0, 0, 0)
-	item.TextStrokeTransparency = 0
-	item.Parent = parent
-	return item
+local function text(parent,class,name,value,size,position)
+	local object = Instance.new(class)
+	object.Name = name
+	object.Text = value
+	object.Size = size
+	object.Position = position
+	object.Font = Enum.Font.GothamBold
+	object.TextSize = 15
+	object.TextColor3 = white
+	object.BackgroundColor3 = ink
+	object.BorderSizePixel = 0
+	object.Parent = parent
+	return object
 end
 
-local function style(frame, color, transparency)
-	frame.BackgroundColor3 = color
-	frame.BackgroundTransparency = transparency
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 12)
-	corner.Parent = frame
-	local edge = Instance.new("UIStroke")
-	edge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	edge.Thickness = 2
-	edge.Parent = frame
+function Menu.format(amount)
+	local digits = tostring(amount)
+	return digits:reverse():gsub("(%d%d%d)","%1,"):reverse():gsub("^,","")
 end
 
-function Menu.mount(hud, player)
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "Blitz Menus"
-	gui.DisplayOrder = 2
-	gui.ResetOnSpawn = false
-	gui.Parent = hud.Parent
+function Menu.mount(gui,player,remote)
+	local function button(parent,label,x,y,width)
+		return text(parent,"TextButton",label,label,UDim2.fromOffset(width,36),UDim2.fromOffset(x,y))
+	end
+	local bar = Instance.new("Frame")
+	bar.Size = UDim2.fromOffset(206,36)
+	bar.AnchorPoint = Vector2.new(1,0)
+	bar.Position = UDim2.new(1,-18,0,12)
+	bar.BackgroundTransparency = 1
+	bar.Parent = gui
+	local rebirthButton = button(bar,"Rebirth",0,0,100)
+	local indexButton = button(bar,"Index",106,0,100)
 
-	local shortcuts = Instance.new("Frame")
-	shortcuts.Size = UDim2.fromOffset(74, 136)
-	shortcuts.Position = UDim2.new(0, 12, 0.47, 0)
-	shortcuts.AnchorPoint = Vector2.new(0, 0.5)
-	shortcuts.BackgroundTransparency = 1
-	shortcuts.Parent = gui
+	local panel = Instance.new("Frame")
+	panel.Size = UDim2.new(0.9,0,0.73,0)
+	panel.AnchorPoint = Vector2.new(0.5,0.5)
+	panel.Position = UDim2.fromScale(0.5,0.5)
+	panel.BackgroundColor3 = ink
+	panel.Visible = false
+	panel.BorderSizePixel = 0
+	panel.Parent = gui
+	local bounds = Instance.new("UISizeConstraint")
+	bounds.MaxSize = Vector2.new(460,520)
+	bounds.Parent = panel
 
-	local window = Instance.new("Frame")
-	window.Size = UDim2.new(0.9, 0, 0.8, 0)
-	window.Position = UDim2.fromScale(0.5, 0.5)
-	window.AnchorPoint = Vector2.new(0.5, 0.5)
-	window.Active = true
-	window.Visible = false
-	window.Parent = gui
-	local limit = Instance.new("UISizeConstraint")
-	limit.MaxSize = Vector2.new(412, 365)
-	limit.Parent = window
+	local title = text(panel,"TextLabel","Title","",UDim2.new(1,-74,0,46),UDim2.fromOffset(10,0))
+	title.TextSize = 21
+	local close = button(panel,"Close",0,5,64)
+	close.Position = UDim2.new(1,-70,0,5)
 
-	local title = text(window, "TextLabel", "", 25, UDim2.fromOffset(52, 6), UDim2.new(1, -104, 0, 38))
-	local close = text(window, "TextButton", "×", 25, UDim2.new(1, -45, 0, 8), UDim2.fromOffset(36, 32))
+	local confirmPane = Instance.new("Frame")
+	confirmPane.Size = UDim2.new(1,-24,1,-56)
+	confirmPane.Position = UDim2.fromOffset(12,46)
+	confirmPane.BackgroundTransparency = 1
+	confirmPane.Parent = panel
+	local summary = text(confirmPane,"TextLabel","Rebirth details","",UDim2.new(1,0,0,115),UDim2.fromOffset(0,0))
+	summary.TextWrapped = true
+	local confirm = button(confirmPane,"Confirm",0,124,109)
+	confirm.BackgroundColor3 = aqua
+	confirm.TextColor3 = ink
+	local cancel = button(confirmPane,"Cancel",117,124,100)
 
-	local rebirth = Instance.new("Frame")
-	rebirth.BackgroundTransparency = 1
-	rebirth.Size = UDim2.new(1, -24, 1, -58)
-	rebirth.Position = UDim2.fromOffset(12, 48)
-	rebirth.Parent = window
-	local description = text(rebirth, "TextLabel", "", 17, UDim2.new(), UDim2.new(1, 0, 1, -51))
-	description.TextWrapped = true
-	description.TextScaled = true
-	local descriptionSize = Instance.new("UITextSizeConstraint")
-	descriptionSize.MaxTextSize = 19
-	descriptionSize.Parent = description
-	local confirm = text(rebirth, "TextButton", "Confirm", 17, UDim2.new(0, 0, 1, -42), UDim2.new(0.5, -4, 0, 40))
-	style(confirm, Color3.fromRGB(26, 129, 66), 0.08)
-	local cancel = text(rebirth, "TextButton", "Cancel", 17, UDim2.new(0.5, 4, 1, -42), UDim2.new(0.5, -4, 0, 40))
-	style(cancel, Color3.fromRGB(119, 47, 94), 0.08)
-
-	local index = Instance.new("ScrollingFrame")
-	index.Position = UDim2.fromOffset(12, 48)
-	index.Size = UDim2.new(1, -24, 1, -58)
-	index.BackgroundTransparency = 1
-	index.BorderSizePixel = 0
-	index.ScrollBarThickness = 5
-	index.CanvasSize = UDim2.new()
-	index.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	index.Parent = window
-	local layout = Instance.new("UIListLayout")
-	layout.Parent = index
-	for order, entry in ipairs(Data.cast) do
-		local rarity = Data.rarities[entry[2]]
-		local row = Instance.new("Frame")
-		row.LayoutOrder = order
-		row.Size = UDim2.new(1, -8, 0, 46)
-		row.BackgroundTransparency = 1
-		row.Parent = index
-		local name = text(row, "TextLabel", entry[1], 16, UDim2.new(), UDim2.new(1, -78, 0, 23))
-		name.TextXAlignment = Enum.TextXAlignment.Left
-		local tier = text(row, "TextLabel", rarity.name, 13, UDim2.fromOffset(0, 23), UDim2.new(1, -78, 0, 19))
-		tier.TextXAlignment = Enum.TextXAlignment.Left
-		tier.TextColor3 = rarity.color
-		local rate = text(row, "TextLabel", string.format("+$%d/s", entry[4]), 14,
-			UDim2.new(1, -78, 0, 0), UDim2.new(0, 78, 1, 0))
-		rate.TextColor3 = green
-		rate.TextXAlignment = Enum.TextXAlignment.Right
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Size = UDim2.new(1,-24,1,-60)
+	scroll.Position = UDim2.fromOffset(12,47)
+	scroll.CanvasSize = UDim2.fromOffset(0,0)
+	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scroll.ScrollingDirection = Enum.ScrollingDirection.Y
+	scroll.ScrollBarThickness = 5
+	scroll.BorderSizePixel = 0
+	scroll.BackgroundTransparency = 1
+	scroll.Parent = panel
+	local rows = Instance.new("UIListLayout")
+	rows.Padding = UDim.new(0,4)
+	rows.Parent = scroll
+	for index, entry in Data.cast do
+		local rarity = Data.rarities[entry.tier]
+		local row = text(scroll,"TextLabel",entry.key,
+			("%s\n%s  •  $%s  •  +$%s/s"):format(entry.name,rarity.name,Menu.format(entry.price),Menu.format(entry.rate)),
+			UDim2.new(1,-8,0,42),UDim2.fromOffset(0,0))
+		row.TextColor3 = rarity.color
+		row.BackgroundColor3 = Color3.fromRGB(30,43,64)
+		row.TextWrapped = true
+		row.LayoutOrder = index
 	end
 
-	local function refresh()
+	local function updatePrice()
 		local price = player:GetAttribute("RebirthPrice")
-		local count = player:GetAttribute("Rebirths") or 0
 		confirm.Active = price ~= nil
-		description.Text = string.format(
-			"Required cash  %s\n\n+50%% income per rebirth\nMultiplier  %gx → %gx\n\nCash resets to $150 and your collection is cleared. Stand upgrades stay.\n\nDeliver any carried brainrot and wait for raids on your safehouse to finish.",
-			price and ("$" .. price) or "Loading…", 1 + 0.5 * count, 1 + 0.5 * (count + 1))
+		summary.Text = ("Cost $%s\nIncome bonus +50%%\nCash resets to $150 and your collection is cleared."):format(Menu.format(price or 12000))
 	end
-
-	local function hide()
-		window.Visible = false
-		shortcuts.Visible = true
+	local function show(mode)
+		title.Text = mode
+		confirmPane.Visible = mode == "Rebirth"
+		scroll.Visible = mode == "Index"
+		panel.Visible = true
+		updatePrice()
 	end
-
-	style(window, pink, 0.18)
-	for order, option in ipairs({
-		{ "Rebirth", "⟳", pink, rebirth },
-		{ "Index", "📘", blue, index },
-	}) do
-		local button = text(shortcuts, "TextButton", "", 15, UDim2.fromOffset(0, (order - 1) * 70), UDim2.fromOffset(74, 63))
-		style(button, option[3], 0.18)
-		text(button, "TextLabel", option[2], 34, UDim2.new(), UDim2.new(1, 0, 0, 40))
-		text(button, "TextLabel", option[1], 14, UDim2.fromOffset(0, 37), UDim2.new(1, 0, 0, 21))
-		button.Activated:Connect(function()
-			title.Text = option[1]
-			window.BackgroundColor3 = option[3]
-			rebirth.Visible = option[4] == rebirth
-			index.Visible = option[4] == index
-			window.Visible = true
-			shortcuts.Visible = false
-		end)
+	player:GetAttributeChangedSignal("RebirthPrice"):Connect(updatePrice)
+	rebirthButton.Activated:Connect(function() show("Rebirth") end)
+	indexButton.Activated:Connect(function() show("Index") end)
+	local function dismiss()
+		panel.Visible = false
 	end
-
-	close.Activated:Connect(hide)
-	cancel.Activated:Connect(hide)
+	close.Activated:Connect(dismiss)
+	cancel.Activated:Connect(dismiss)
 	confirm.Activated:Connect(function()
-		if player:GetAttribute("RebirthPrice") then
-			hide()
-			ReplicatedStorage:WaitForChild("BlitzRebirth"):FireServer()
+		local price = player:GetAttribute("RebirthPrice")
+		if price then
+			remote:FireServer(price)
+			dismiss()
 		end
 	end)
-	player:GetAttributeChangedSignal("RebirthPrice"):Connect(refresh)
-	player:GetAttributeChangedSignal("Rebirths"):Connect(refresh)
-	refresh()
+	return dismiss
 end
 
 return Menu
