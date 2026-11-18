@@ -45,7 +45,7 @@ end
 function Shield.activate(player)
  local plot=Base.byPlayer[player] local now=os.clock()
  if not plot or now<plot.cooldownUntil then Base.notify(player,"Shield is cooling down.") return false end
- plot.shieldUntil=now+26 plot.cooldownUntil=now+48
+ plot.shieldUntil=now+26 plot.cooldownUntil=now+26+48
  Shield.step() Base.notify(player,"Shield active for 26 seconds.") return true
 end
 function Shield.step()
