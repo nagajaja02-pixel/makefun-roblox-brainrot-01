@@ -40,10 +40,10 @@ function Base.build(map)
 			end
 			for _, side in ipairs({ -1, 1 }) do
 				part("Shelter column", Vector3.new(1, 8, 1), side * (halfWidth - 0.5), 4, -halfDepth + 1, World.steel)
-				trim("Side cladding", 0.55, 3.5, depth - 2, side * (halfWidth - 0.5), 2.17, 0, accent, flat)
+				trim("Side cladding", 0.38, 7.45, depth - 1, side * (halfWidth - 0.5), 4.125, 0, accent, flat)
 				trim("Side transom", 0.55, 0.45, depth - 2, side * (halfWidth - 0.5), 7.65, 0, accent, flat)
 				for _, zBay in ipairs({ -14, -4.7, 4.7, 14 }) do
-					trim("Side window", 0.35, 3.35, 8.5, side * (halfWidth - 0.5), 5.62, zBay, pale, Enum.Material.Glass).Transparency = 0.46
+					trim("Side window", 0.55, 3.35, 8.5, side * (halfWidth - 0.5), 5.62, zBay, pale, flat)
 					trim("Side mullion", 0.65, 4.1, 0.45, side * (halfWidth - 0.5), 5.75, zBay + 4.4, accent, flat)
 				end
 				trim("Entry floor stripe", 0.26, 0.04, depth - 4, side * 4.75, 0.42, 0, accent)
@@ -111,10 +111,25 @@ function Base.parkUnit(state, index, slot, onRaid)
 	slot.inTransit = false
 	slot.model = Models.sculpt(state.base.model, slot.unit, stand.CFrame * CFrame.new(0, 0.29, 0), slot.unit.entry[7])
 	state.slots[index] = slot
+	for _, part in ipairs(slot.model:GetChildren()) do
+		if part:IsA("BasePart") then
+			part.CanQuery = true
+		end
+	end
+	local click = Instance.new("ClickDetector")
+	click.MaxActivationDistance = 10
+	click.Parent = slot.model
+	click.MouseClick:Connect(function(player)
+		if player == state.player then
+			onRaid(player, state, index, slot)
+		end
+	end)
 	local prompt = World.prompt(slot.model.PrimaryPart, "Raid", slot.unit.entry[1], 1.25)
 	prompt:SetAttribute("HideForUserId", state.player.UserId)
 	prompt.Triggered:Connect(function(player)
-		onRaid(player, state, index, slot)
+		if player ~= state.player then
+			onRaid(player, state, index, slot)
+		end
 	end)
 	Money.publish(state)
 end

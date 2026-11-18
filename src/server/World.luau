@@ -13,7 +13,8 @@ World.plotRow = 51
 World.beltTop = 1.8
 World.wallThickness = 3
 World.machineDepth = 20
-World.importCenter = -85
+World.importBack = -World.islandHalfX + World.wallThickness
+World.importCenter = World.importBack + World.machineDepth / 2
 World.receiverBack = World.islandHalfX - World.wallThickness
 World.receiverCenter = World.receiverBack - World.machineDepth / 2
 World.importCurtain = World.importCenter + 6
@@ -138,7 +139,7 @@ function World.buildHarbor()
 	local rubber = Color3.fromRGB(42, 62, 76)
 	local hazard = Color3.fromRGB(255, 209, 52)
 	local top = World.beltTop
-	local beltStart, beltEnd = World.importCenter - 5, World.receiverBack
+	local beltStart, beltEnd = World.importBack, World.receiverBack
 	local beltLength = beltEnd - beltStart
 	local beltCenter = (beltStart + beltEnd) / 2
 	local belt = World.part(map, "Conveyor", Vector3.new(beltLength, 0.56, 16),
@@ -146,7 +147,7 @@ function World.buildHarbor()
 	for x = beltStart + 2, beltEnd - 2, 4 do
 		detail("Conveyor tread", 0.22, 0.06, 15.5, x, top + 0.02, 0, World.steel, flat)
 	end
-	for x = -70, World.receiverCurtain - 4, 14 do
+	for x = World.importCurtain + 5, World.receiverCurtain - 4, 14 do
 		detail("Conveyor support crossbeam", 1.15, 0.4, 16.8, x, 1.14, 0, World.steel, flat)
 		for _, z in ipairs({ -6.8, 6.8 }) do
 			detail("Conveyor foot", 2.4, 0.18, 2.2, x, 0.09, z, World.steel, flat)
@@ -158,15 +159,15 @@ function World.buildHarbor()
 		local railZ = side * 8
 		detail("Steel edge rail", beltLength, 0.35, 0.48, beltCenter, top + 0.22, railZ, World.steel, flat)
 		detail("Hazard edge", beltLength, 0.24, 0.43, beltCenter, top - 0.33, railZ, hazard, flat)
-		for x = -72, World.receiverCurtain - 2, 4 do
+		for x = World.importCurtain + 3, World.receiverCurtain - 2, 4 do
 			detail("Hazard stripe", 1.05, 0.26, 0.45, x, top - 0.33, railZ, rubber, flat, 0.26)
 		end
-		for x = -70, World.receiverCurtain - 4, 7 do
+		for x = World.importCurtain + 5, World.receiverCurtain - 4, 7 do
 			detail("Roller end cap", 0.64, 0.64, 0.28, x, top - 0.77, railZ, World.steel, flat, 0, Enum.PartType.Ball)
-			detail("Rail light", 1.8, 0.12, 0.36, x, top + 0.45, railZ, beltLights[(x / 7 + side) % 4 + 1], glow)
+			detail("Rail light", 1.8, 0.12, 0.36, x, top + 0.45, railZ, beltLights[((x - World.importCurtain - 5) / 7 + side) % 4 + 1], glow)
 		end
 	end
-	for _, x in ipairs({ beltStart, beltEnd - 0.55 }) do
+	for _, x in ipairs({ beltStart + 0.55, beltEnd - 0.55 }) do
 		local roller = detail("Drive roller", 16.8, 1.1, 1.1, x, top - 0.53, 0,
 			World.steel, flat, 0, Enum.PartType.Cylinder)
 		roller.CFrame *= CFrame.Angles(0, math.pi / 2, 0)
@@ -212,8 +213,8 @@ function World.buildHarbor()
 
 	for _, side in ipairs({ -1, 1 }) do
 		local lane = side * 25
-		detail("Evacuation path", 226, 0.06, 6, 0, 0.03, lane, cream, flat)
-		for x = -105, 105, 6 do
+		detail("Evacuation path", beltLength, 0.06, 6, 0, 0.03, lane, cream, flat)
+		for x = beltStart + 5, beltEnd - 5, 6 do
 			detail("Evacuation lane marker", 3, 0.06, 0.26, x, 0.065, lane, teal)
 		end
 		for _, x in ipairs({ -World.plotSpacing, 0, World.plotSpacing }) do
@@ -312,7 +313,7 @@ function World.buildHarbor()
 	backdrop("Crane boom", 38, 1.6, 2.3, -20, 24.8, 67, World.gold, flat)
 	backdrop("Crane boom stay", 24, 0.38, 0.55, -20, 27, 67, World.steel, flat, -0.18)
 	backdrop("Crane operator cab", 4, 3, 3.3, -7, 22, 67, teal, flat)
-	backdrop("Crane cab window", 3.3, 1.95, 0.15, -7, 22.2, 65.27, Color3.fromRGB(137, 219, 240), Enum.Material.Glass)
+	backdrop("Crane cab window", 3.3, 1.95, 0.15, -7, 22.2, 65.27, Color3.fromRGB(137, 219, 240), flat)
 	backdrop("Crane hoist cable", 0.17, 10, 0.17, -32, 19, 67, World.ink, flat)
 	backdrop("Crane hook", 1.15, 0.65, 0.7, -32, 13.75, 67, World.gold, flat)
 	return map, belt

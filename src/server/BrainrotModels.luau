@@ -298,10 +298,10 @@ function Models.sculpt(parent, unit, pose, caption)
 	end
 
 	-- Preserve the existing conveyor, carry and prompt reference point across all body shapes.
-	local pivot = piece("Interaction anchor", 0.25, 0.25, 0.25, 0, 2.05, 0, ink)
-	pivot.Transparency = 1
-	model.PrimaryPart = pivot
 	cast[unit.entry[5]](piece, face, hue)
+	local pivot = model:FindFirstChildWhichIsA("BasePart")
+	pivot.PivotOffset = pivot.CFrame:ToObjectSpace(CFrame.new(0, 2.05, 0))
+	model.PrimaryPart = pivot
 	if mutation ~= "" then
 		local shine = diamond and rgb(176, 245, 255) or rgb(255, 220, 112)
 		for _, side in ipairs({ -1, 1 }) do

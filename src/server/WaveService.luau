@@ -25,9 +25,8 @@ function Wave:step(now, states, notify)
 			notify(player, "Tsunami incoming! Reach your safehouse.", "warning")
 		end
 	elseif self.phase == "EVACUATE" and now >= self.at then
-		local wall = World.part(self.map, "Tsunami wall", Vector3.new(11, 16, waveWidth), CFrame.new(-sweepEdge, 7, 0), Color3.fromRGB(43, 171, 237), Enum.Material.Glass)
+		local wall = World.part(self.map, "Tsunami wall", Vector3.new(11, 16, waveWidth), CFrame.new(-sweepEdge, 7, 0), Color3.fromRGB(43, 171, 237))
 		wall.CanCollide = false
-		wall.Transparency = 0.23
 		local crest = World.part(self.map, "Tsunami crest", Vector3.new(12, 2, waveWidth), wall.CFrame * CFrame.new(0, 8, 0), Color3.fromRGB(158, 239, 255), Enum.Material.Neon)
 		crest.CanCollide = false
 		self.wall, self.crest = wall, crest

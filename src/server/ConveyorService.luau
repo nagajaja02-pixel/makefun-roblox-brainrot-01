@@ -12,9 +12,9 @@ Conveyor.__index = Conveyor
 
 function Conveyor.new(map, states, notify)
 	local self = setmetatable({ map = map, states = states, notify = notify, offers = {}, clock = 0, serial = 0 }, Conveyor)
-	for index = 1, 13 do
+	for index = 1, #Data.cast do
 		local starter = index == 6 and 1 or index == 5 and 2 or index == 7 and 3
-		self:spawnOffer(World.importCenter + 2 + index * 14, starter and Data.create(starter, false) or Data.create(index, true))
+		self:spawnOffer(World.importCurtain + index * 17, starter and Data.create(starter, false) or Data.create(index, true))
 	end
 	return self
 end

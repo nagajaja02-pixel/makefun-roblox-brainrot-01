@@ -10,6 +10,7 @@ local Money = require(script.MoneyService)
 local Steal = require(script.StealService)
 local Wave = require(script.WaveService)
 local Conveyor = require(script.ConveyorService)
+local Merchant = require(script.MerchantService)
 
 local map = World.buildHarbor()
 local bases = Base.build(map)
@@ -29,7 +30,11 @@ local function notify(player, text, style)
 end
 
 local function raidStand(player, victim, index, slot)
-	Steal.beginRaid(player, victim, index, slot, states, notify)
+	if player == victim.player and states[player] == victim then
+		Steal.pickupOwn(victim, index, slot, notify)
+	else
+		Steal.beginRaid(player, victim, index, slot, states, notify)
+	end
 end
 
 local function upgradeBase(state)
@@ -195,6 +200,7 @@ end)
 
 local conveyor = Conveyor.new(map, states, notify)
 local wave = Wave.new(map)
+Merchant.build(map, states, notify)
 for _, player in ipairs(Players:GetPlayers()) do
 	task.spawn(assignSafehouse, player)
 end
@@ -220,9 +226,11 @@ RunService.Heartbeat:Connect(function(dt)
 		local root = World.aliveRoot(player)
 		if state.carry and root then
 			if Base.isSheltered(state.base, root.Position) then
-				Steal.deliverCarry(state, raidStand, notify)
+				if not state.carry.waitForExit then
+					Steal.deliverCarry(state, raidStand, notify)
+				end
 			else
-				state.carry.model:PivotTo(root.CFrame * CFrame.new(0, 3.75, 0))
+				state.carry.waitForExit = false
 			end
 		end
 	end

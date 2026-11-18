@@ -123,7 +123,7 @@ local function refreshEconomy()
 	upgrade.Text = price
 	local cargo = player:GetAttribute("Carrying")
 	if cargo and cargo ~= "" then
-		objective.Text = "DELIVER  /  " .. cargo
+		objective.Text = "DELIVER HOME OR SELL  /  " .. cargo
 		objective.TextColor3 = gold
 	else
 		objective.Text = "Buy an import on the conveyor"
@@ -136,15 +136,27 @@ for _, attribute in ipairs({ "Cash", "Rate", "Capacity", "Level", "Rebirths", "U
 end
 refreshEconomy()
 
-local homeMarker = Instance.new("Part")
+task.spawn(function()
+	local harbor = workspace:WaitForChild("Blitz Harbor")
+	local shop = harbor:WaitForChild("Warung Brainrot")
+	local prompt = shop:WaitForChild("Counter"):WaitForChild("SellBrainrot")
+	local function refreshSellPrompt()
+		local cargo = player:GetAttribute("Carrying")
+		local price = player:GetAttribute("SellPrice")
+		local canSell = cargo and cargo ~= "" and price ~= nil
+		if canSell then
+			prompt.ActionText = string.format("Sell %s for $%d", cargo, price)
+		end
+		prompt.Enabled = canSell == true
+	end
+	player:GetAttributeChangedSignal("Carrying"):Connect(refreshSellPrompt)
+	player:GetAttributeChangedSignal("SellPrice"):Connect(refreshSellPrompt)
+	refreshSellPrompt()
+end)
+
+local homeMarker = Instance.new("Attachment")
 homeMarker.Name = "Home direction"
-homeMarker.Size = Vector3.one
-homeMarker.Anchored = true
-homeMarker.CanCollide = false
-homeMarker.CanTouch = false
-homeMarker.CanQuery = false
-homeMarker.Transparency = 1
-homeMarker.Parent = workspace
+homeMarker.Parent = workspace.Terrain
 local beacon = Instance.new("BillboardGui")
 beacon.Size = UDim2.fromOffset(120, 29)
 beacon.AlwaysOnTop = true

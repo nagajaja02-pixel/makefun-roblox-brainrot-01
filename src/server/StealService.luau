@@ -4,20 +4,80 @@ local Money = require(script.Parent.MoneyService)
 local Models = require(script.Parent.BrainrotModels)
 local Steal = {}
 
+local function weld(parent, part0, part1)
+	local joint = Instance.new("WeldConstraint")
+	joint.Part0 = part0
+	joint.Part1 = part1
+	joint.Parent = parent
+end
+
+local function raiseArms(character)
+	local shoulders = {}
+	for _, torsoName in ipairs({ "UpperTorso", "Torso" }) do
+		local torso = character:FindFirstChild(torsoName)
+		if torso then
+			for _, joint in ipairs(character:GetDescendants()) do
+				if joint:IsA("Motor6D") and joint.Part0 == torso
+					and (joint.Name == "LeftShoulder" or joint.Name == "RightShoulder"
+						or joint.Name == "Left Shoulder" or joint.Name == "Right Shoulder") then
+					local offset = joint.C0
+					shoulders[joint] = offset
+					joint.C0 = CFrame.new(offset.Position) * CFrame.Angles(math.rad(168), 0, 0) * offset.Rotation
+				end
+			end
+		end
+	end
+	return shoulders
+end
+
 function Steal.startCarry(state, unit, source, sourceIndex)
-	local model = Models.sculpt(workspace, unit, CFrame.new(), nil)
 	local root = World.aliveRoot(state.player)
-	model:PivotTo(root.CFrame * CFrame.new(0, 3.75, 0))
-	state.carry = { unit = unit, source = source, sourceIndex = sourceIndex, model = model }
+	local model = Models.sculpt(workspace, unit, CFrame.new(), nil)
+	local pivot = model.PrimaryPart
+	model:PivotTo(root.CFrame * CFrame.new(0, 4.45, -0.35))
+	for _, part in ipairs(model:GetChildren()) do
+		if part:IsA("BasePart") then
+			part.Massless = true
+			if part ~= pivot then
+				weld(pivot, pivot, part)
+			end
+			part.Anchored = false
+		end
+	end
+	weld(pivot, root, pivot)
+	local ownPickup = source == state
+	state.carry = {
+		unit = unit, source = source, sourceIndex = sourceIndex, model = model,
+		shoulders = raiseArms(root.Parent),
+		waitForExit = ownPickup and Base.isSheltered(state.base, root.Position),
+	}
+	state.player:SetAttribute("SellPrice", math.floor(unit.price / 2))
 	state.player:SetAttribute("Carrying", unit.entry[1])
 end
 
 function Steal.clearCarry(state)
 	local carry = state.carry
 	carry.model:Destroy()
+	for joint, offset in pairs(carry.shoulders) do
+		joint.C0 = offset
+	end
 	state.carry = nil
 	state.player:SetAttribute("Carrying", "")
+	state.player:SetAttribute("SellPrice", nil)
 	return carry
+end
+
+function Steal.pickupOwn(state, index, slot, notify)
+	if state.savingRebirth or state.carry or state.slots[index] ~= slot or slot.inTransit
+		or not slot.model or not World.near(state.player, slot.model.PrimaryPart) then
+		return
+	end
+	slot.inTransit = true
+	slot.model:Destroy()
+	slot.model = nil
+	Steal.startCarry(state, slot.unit, state, index)
+	Money.publish(state)
+	notify(state.player, "Sell at the merchant, or leave and re-enter to install.", "success")
 end
 
 function Steal.returnRaid(state, states, onRaid, notify)
@@ -39,7 +99,7 @@ end
 function Steal.beginRaid(player, victim, index, slot, states, notify)
 	local thief = states[player]
 	if not thief or thief.savingRebirth or victim.savingRebirth or thief == victim or states[victim.player] ~= victim
-		or victim.slots[index] ~= slot or slot.inTransit or not World.near(player, slot.model.PrimaryPart) then
+		or victim.slots[index] ~= slot or slot.inTransit or not slot.model or not World.near(player, slot.model.PrimaryPart) then
 		return
 	end
 	if workspace:GetServerTimeNow() < victim.lockUntil then
@@ -59,23 +119,40 @@ function Steal.beginRaid(player, victim, index, slot, states, notify)
 	notify(victim.player, player.DisplayName .. " grabbed " .. slot.unit.entry[1] .. "!", "warning")
 end
 
+local function removeSourceSlot(state, carry, notify)
+	local source = carry.source
+	if not source then
+		return
+	end
+	local slot = source.slots[carry.sourceIndex]
+	if slot and slot.inTransit then
+		source.slots[carry.sourceIndex] = nil
+		if source ~= state then
+			Money.publish(source)
+			notify(source.player, carry.unit.entry[1] .. " was stolen.", "warning")
+		end
+	end
+end
+
 function Steal.deliverCarry(state, onRaid, notify)
-	local index = Base.freeSlot(state)
+	local carry = state.carry
+	local index = Base.freeSlot(state) or (carry.source == state and carry.sourceIndex)
 	if not index then
 		return
 	end
-	local carry = Steal.clearCarry(state)
-	local victim = carry.source
-	if victim then
-		local slot = victim.slots[carry.sourceIndex]
-		if slot and slot.inTransit then
-			victim.slots[carry.sourceIndex] = nil
-			Money.publish(victim)
-			notify(victim.player, carry.unit.entry[1] .. " was stolen.", "warning")
-		end
-	end
+	Steal.clearCarry(state)
+	removeSourceSlot(state, carry, notify)
 	Base.parkUnit(state, index, { unit = carry.unit }, onRaid)
 	notify(state.player, string.format("%s installed  •  +$%d/s base rate", carry.unit.entry[1], carry.unit.rate), "success")
+end
+
+function Steal.sellCarry(state, notify)
+	local carry = Steal.clearCarry(state)
+	removeSourceSlot(state, carry, notify)
+	local price = math.floor(carry.unit.price / 2)
+	state.cash += price
+	Money.publish(state)
+	notify(state.player, string.format("Sold %s for $%d.", carry.unit.entry[1], price), "success")
 end
 
 return Steal
