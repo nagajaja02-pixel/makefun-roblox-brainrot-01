@@ -1,4 +1,5 @@
 local Lighting = game:GetService("Lighting")
+local flat = Enum.Material.SmoothPlastic
 local World = {}
 World.ink = Color3.fromRGB(19, 28, 48)
 World.steel = Color3.fromRGB(99, 150, 181)
@@ -10,8 +11,13 @@ World.islandHalfZ = 100
 World.plotSpacing = 82
 World.plotRow = 51
 World.beltTop = 1.8
-World.beltEnd = 85
-World.machineCurtain = World.beltEnd - 6
+World.wallThickness = 3
+World.machineDepth = 20
+World.importCenter = -85
+World.receiverBack = World.islandHalfX - World.wallThickness
+World.receiverCenter = World.receiverBack - World.machineDepth / 2
+World.importCurtain = World.importCenter + 6
+World.receiverCurtain = World.receiverCenter - 6
 
 function World.part(parent, name, size, frame, color, material, shape)
 	local part = Instance.new("Part")
@@ -113,7 +119,7 @@ function World.buildHarbor()
 	World.part(map, "Ocean", Vector3.new(1300, 8, 1300), CFrame.new(0, -8, 0), Color3.fromRGB(35, 172, 235), Enum.Material.SmoothPlastic)
 	local halfX, halfZ = World.islandHalfX, World.islandHalfZ
 	World.part(map, "Harbor island", Vector3.new(2 * halfX, 8, 2 * halfZ),
-		CFrame.new(0, -4, 0), Color3.fromRGB(103, 188, 62), Enum.Material.Grass)
+		CFrame.new(0, -4, 0), Color3.fromRGB(103, 188, 62), Enum.Material.SmoothPlastic)
 
 	local function detail(name, sx, sy, sz, x, y, z, color, material, angle, shape)
 		local part = World.part(map, name, Vector3.new(sx, sy, sz),
@@ -126,119 +132,119 @@ function World.buildHarbor()
 	local teal = Color3.fromRGB(25, 169, 164)
 	local vermilion = Color3.fromRGB(244, 101, 75)
 	local cream = Color3.fromRGB(255, 232, 185)
-	local metal = Enum.Material.Metal
 	local glow = Enum.Material.Neon
-	local concrete = Enum.Material.Concrete
-	local wood = Enum.Material.WoodPlanks
 	local brown = Color3.fromRGB(139, 87, 51)
 	local coping = Color3.fromRGB(195, 134, 83)
 	local rubber = Color3.fromRGB(42, 62, 76)
 	local hazard = Color3.fromRGB(255, 209, 52)
-	local endX, top = World.beltEnd, World.beltTop
-	local beltHalfX = endX + 5
-	local belt = World.part(map, "Conveyor", Vector3.new(2 * beltHalfX, 0.56, 16),
-		CFrame.new(0, top - 0.28, 0), rubber, Enum.Material.SmoothPlastic)
-	for x = -beltHalfX + 2, beltHalfX - 2, 4 do
-		detail("Conveyor tread", 0.22, 0.06, 15.5, x, top + 0.02, 0, World.steel, metal)
+	local top = World.beltTop
+	local beltStart, beltEnd = World.importCenter - 5, World.receiverBack
+	local beltLength = beltEnd - beltStart
+	local beltCenter = (beltStart + beltEnd) / 2
+	local belt = World.part(map, "Conveyor", Vector3.new(beltLength, 0.56, 16),
+		CFrame.new(beltCenter, top - 0.28, 0), rubber, Enum.Material.SmoothPlastic)
+	for x = beltStart + 2, beltEnd - 2, 4 do
+		detail("Conveyor tread", 0.22, 0.06, 15.5, x, top + 0.02, 0, World.steel, flat)
 	end
-	for x = -70, 70, 14 do
-		detail("Conveyor support crossbeam", 1.15, 0.4, 16.8, x, 1.14, 0, World.steel, metal)
+	for x = -70, World.receiverCurtain - 4, 14 do
+		detail("Conveyor support crossbeam", 1.15, 0.4, 16.8, x, 1.14, 0, World.steel, flat)
 		for _, z in ipairs({ -6.8, 6.8 }) do
-			detail("Conveyor foot", 2.4, 0.18, 2.2, x, 0.09, z, World.steel, metal)
-			detail("Conveyor leg", 0.85, 1.15, 0.85, x, 0.65, z, World.steel, metal)
+			detail("Conveyor foot", 2.4, 0.18, 2.2, x, 0.09, z, World.steel, flat)
+			detail("Conveyor leg", 0.85, 1.15, 0.85, x, 0.65, z, World.steel, flat)
 		end
 	end
 	local beltLights = { World.gold, World.aqua, Color3.fromRGB(255, 121, 190), Color3.fromRGB(132, 177, 255) }
 	for _, side in ipairs({ -1, 1 }) do
 		local railZ = side * 8
-		detail("Steel edge rail", 2 * beltHalfX, 0.35, 0.48, 0, top + 0.22, railZ, World.steel, metal)
-		detail("Hazard edge", 2 * beltHalfX, 0.24, 0.43, 0, top - 0.33, railZ, hazard, metal)
-		for x = -72, 72, 4 do
-			detail("Hazard stripe", 1.05, 0.26, 0.45, x, top - 0.33, railZ, rubber, metal, 0.26)
+		detail("Steel edge rail", beltLength, 0.35, 0.48, beltCenter, top + 0.22, railZ, World.steel, flat)
+		detail("Hazard edge", beltLength, 0.24, 0.43, beltCenter, top - 0.33, railZ, hazard, flat)
+		for x = -72, World.receiverCurtain - 2, 4 do
+			detail("Hazard stripe", 1.05, 0.26, 0.45, x, top - 0.33, railZ, rubber, flat, 0.26)
 		end
-		for x = -70, 70, 7 do
-			detail("Roller end cap", 0.64, 0.64, 0.28, x, top - 0.77, railZ, World.steel, metal, 0, Enum.PartType.Ball)
+		for x = -70, World.receiverCurtain - 4, 7 do
+			detail("Roller end cap", 0.64, 0.64, 0.28, x, top - 0.77, railZ, World.steel, flat, 0, Enum.PartType.Ball)
 			detail("Rail light", 1.8, 0.12, 0.36, x, top + 0.45, railZ, beltLights[(x / 7 + side) % 4 + 1], glow)
 		end
 	end
-	for _, x in ipairs({ -beltHalfX, beltHalfX }) do
+	for _, x in ipairs({ beltStart, beltEnd - 0.55 }) do
 		local roller = detail("Drive roller", 16.8, 1.1, 1.1, x, top - 0.53, 0,
-			World.steel, metal, 0, Enum.PartType.Cylinder)
+			World.steel, flat, 0, Enum.PartType.Cylinder)
 		roller.CFrame *= CFrame.Angles(0, math.pi / 2, 0)
 	end
 	for _, side in ipairs({ -1, 1 }) do
-		local x = side * endX
-		local mouth = side * (World.machineCurtain - 3)
+		local x = side < 0 and World.importCenter or World.receiverCenter
+		local curtain = side < 0 and World.importCurtain or World.receiverCurtain
+		local mouth = curtain - side * 3
 		for _, z in ipairs({ -9.5, 9.5 }) do
-			World.part(map, "Machine housing", Vector3.new(20, 12, 3), CFrame.new(x, 6, z), teal, metal)
-			detail("Portal jamb", 1.6, 10, 1.5, mouth, 5, z, World.steel, metal)
+			World.part(map, "Machine housing", Vector3.new(World.machineDepth, 12, 3), CFrame.new(x, 6, z), teal, flat)
+			detail("Portal jamb", 1.6, 10, 1.5, mouth, 5, z, World.steel, flat)
 			detail("Machine warning light", 1.5, 0.4, 1.5, x, 12.2, z, hazard, glow)
 			for vent = -6, 6, 2 do
-				detail("Machine cooling vent", 0.6, 3.8, 0.16, x + vent, 5, z / math.abs(z) * 11.06, rubber, metal)
+				detail("Machine cooling vent", 0.6, 3.8, 0.16, x + vent, 5, z / math.abs(z) * 11.06, rubber, flat)
 			end
 		end
-		World.part(map, "Machine backplate", Vector3.new(1.5, 12, 19), CFrame.new(side * (endX + 9.5), 6, 0), teal, metal)
-		detail("Machine roof", 20, 2, 22, x, 11, 0, World.steel, metal)
+		World.part(map, "Machine backplate", Vector3.new(1.5, 12, 19), CFrame.new(x + side * (World.machineDepth / 2 - 0.75), 6, 0), teal, flat)
+		detail("Machine roof", World.machineDepth, 2, 22, x, 11, 0, World.steel, flat)
 		for z = -7.5, 7.5, 1 do
-			detail("Flexible portal curtain", 0.25, 8.1, 1, side * World.machineCurtain, 5.85, z, rubber)
+			detail("Flexible portal curtain", 0.25, 8.1, 1, curtain, 5.85, z, rubber)
 		end
-		local fascia = detail("Machine header", 1.8, 2.6, 22, mouth, 9.85, 0, World.ink, metal)
+		local fascia = detail("Machine header", 1.8, 2.6, 22, mouth, 9.85, 0, World.ink, flat)
 		World.sign(fascia, side < 0 and "BLITZ IMPORTS" or "RETURN PROCESSOR",
 			World.white, 221, 32, Vector3.new(0, 2.4, 0), 90)
 	end
 
-	local wallHeight, thickness = 18, 3
+	local wallHeight, thickness = 18, World.wallThickness
 	for _, side in ipairs({ -1, 1 }) do
 		local edgeX, edgeZ = side * (halfX - thickness / 2), side * (halfZ - thickness / 2)
 		World.part(map, "Perimeter wall", Vector3.new(2 * halfX, wallHeight, thickness),
-			CFrame.new(0, wallHeight / 2, edgeZ), brown, concrete)
+			CFrame.new(0, wallHeight / 2, edgeZ), brown, flat)
 		World.part(map, "Perimeter wall", Vector3.new(thickness, wallHeight, 2 * halfZ),
-			CFrame.new(edgeX, wallHeight / 2, 0), brown, concrete)
-		detail("Wall coping", 2 * halfX, 0.85, 3.5, 0, wallHeight, edgeZ, coping, concrete)
-		detail("Wall coping", 3.5, 0.85, 2 * halfZ, edgeX, wallHeight, 0, coping, concrete)
+			CFrame.new(edgeX, wallHeight / 2, 0), brown, flat)
+		detail("Wall coping", 2 * halfX, 0.85, 3.5, 0, wallHeight, edgeZ, coping, flat)
+		detail("Wall coping", 3.5, 0.85, 2 * halfZ, edgeX, wallHeight, 0, coping, flat)
 		for x = -120, 120, 24 do
-			detail("Wall pilaster", 1.25, wallHeight, 0.4, x, wallHeight / 2, edgeZ - side * 1.6, coping, concrete)
+			detail("Wall pilaster", 1.25, wallHeight, 0.4, x, wallHeight / 2, edgeZ - side * 1.6, coping, flat)
 		end
 		for z = -80, 80, 20 do
-			detail("Wall pilaster", 0.4, wallHeight, 1.25, edgeX - side * 1.6, wallHeight / 2, z, coping, concrete)
+			detail("Wall pilaster", 0.4, wallHeight, 1.25, edgeX - side * 1.6, wallHeight / 2, z, coping, flat)
 		end
 	end
 
 	for _, side in ipairs({ -1, 1 }) do
 		local lane = side * 25
-		detail("Evacuation path", 226, 0.06, 6, 0, 0.03, lane, cream, concrete)
+		detail("Evacuation path", 226, 0.06, 6, 0, 0.03, lane, cream, flat)
 		for x = -105, 105, 6 do
 			detail("Evacuation lane marker", 3, 0.06, 0.26, x, 0.065, lane, teal)
 		end
 		for _, x in ipairs({ -World.plotSpacing, 0, World.plotSpacing }) do
-			detail("Safehouse approach", 9, 0.06, 12, x, 0.035, side * 33, cream, concrete)
+			detail("Safehouse approach", 9, 0.06, 12, x, 0.035, side * 33, cream, flat)
 		end
 		for _, x in ipairs({ -110, -41, 41, 110 }) do
 			local z = side * 31
-			detail("Street lamp post", 0.45, 10, 0.45, x, 5, z, World.steel, metal)
-			detail("Street lamp arm", 0.5, 0.45, 3.4, x, 9.8, z - side * 1.35, World.steel, metal)
+			detail("Street lamp post", 0.45, 10, 0.45, x, 5, z, World.steel, flat)
+			detail("Street lamp arm", 0.5, 0.45, 3.4, x, 9.8, z - side * 1.35, World.steel, flat)
 			detail("Street lamp diffuser", 1.35, 0.3, 1.65, x, 9.52, z - side * 2.6, cream, glow)
 			detail("Harbor banner", 2.4, 3.5, 0.16, x + 1.3, 6.7, z, side < 0 and teal or vermilion)
-			detail("Banner crossbar", 2.8, 0.16, 0.25, x + 1.2, 8.5, z, World.steel, metal)
+			detail("Banner crossbar", 2.8, 0.16, 0.25, x + 1.2, 8.5, z, World.steel, flat)
 		end
 		for _, x in ipairs({ -41, 41 }) do
 			local z = side * 53
 			for offset = -7, 7, 7 do
-				detail("Decorative fence post", 0.45, 2.7, 0.45, x, 1.35, z + offset, coping, wood)
+				detail("Decorative fence post", 0.45, 2.7, 0.45, x, 1.35, z + offset, coping, flat)
 			end
 			for _, y in ipairs({ 0.95, 2.15 }) do
-				detail("Decorative fence rail", 0.24, 0.25, 14.4, x, y, z, cream, wood)
+				detail("Decorative fence rail", 0.24, 0.25, 14.4, x, y, z, cream, flat)
 			end
-			detail("Cargo crate", 3.4, 3.4, 3.4, x + 5, 1.7, z + side * 4, coping, wood)
-			detail("Crate brace", 0.3, 4.25, 0.13, x + 5, 1.7, z + side * 4 - 1.74, cream, wood, 0.75)
-			detail("Cargo barrel", 2.7, 2.1, 2.1, x - 5, 1.35, z, vermilion, metal, math.pi / 2, Enum.PartType.Cylinder)
+			detail("Cargo crate", 3.4, 3.4, 3.4, x + 5, 1.7, z + side * 4, coping, flat)
+			detail("Crate brace", 0.3, 4.25, 0.13, x + 5, 1.7, z + side * 4 - 1.74, cream, flat, 0.75)
+			detail("Cargo barrel", 2.7, 2.1, 2.1, x - 5, 1.35, z, vermilion, flat, math.pi / 2, Enum.PartType.Cylinder)
 			for _, y in ipairs({ 0.5, 2.2 }) do
-				detail("Barrel hoop", 0.22, 2.18, 2.18, x - 5, y, z, World.steel, metal, math.pi / 2, Enum.PartType.Cylinder)
+				detail("Barrel hoop", 0.22, 2.18, 2.18, x - 5, y, z, World.steel, flat, math.pi / 2, Enum.PartType.Cylinder)
 			end
 		end
 		for _, x in ipairs({ -111, -41, 41, 111 }) do
 			local z = side * 78
-			detail("Palm trunk", 1.3, 10, 1.3, x, 5, z, brown, wood, 0.12)
+			detail("Palm trunk", 1.3, 10, 1.3, x, 5, z, brown, flat, 0.12)
 			for leaf = 0, 5 do
 				local azimuth = leaf * math.pi / 3
 				local frond = detail("Palm frond", 6.5, 0.55, 2.15, x, 10.6, z,
@@ -247,10 +253,10 @@ function World.buildHarbor()
 			end
 			for offset = -4, 4, 4 do
 				detail("Shrub", 4.7, 2.75, 3.4, x + offset, 1.3, z + 3, Color3.fromRGB(53, 153, 68),
-					Enum.Material.Grass, 0, Enum.PartType.Ball)
+					Enum.Material.SmoothPlastic, 0, Enum.PartType.Ball)
 			end
 		end
-		local post = detail("Wayfinding post", 0.45, 4.5, 0.45, 17, 2.25, side * 30, World.steel, metal)
+		local post = detail("Wayfinding post", 0.45, 4.5, 0.45, 17, 2.25, side * 30, World.steel, flat)
 		World.sign(post, "SAFEHOUSES", World.aqua, 133, 26, Vector3.new(0, 2.4, 0), 38)
 		for x = -105, 105, 35 do
 			detail("Wake stripe", 12, 0.05, 0.45, x, -3.96, side * (halfZ + 17 + math.abs(x) % 12),
@@ -262,24 +268,24 @@ function World.buildHarbor()
 	local function backdrop(name, sx, sy, sz, x, y, z, color, material, angle)
 		return detail(name, sx, sy, sz, x, y, z + halfZ - 48, color, material, angle)
 	end
-	backdrop("Cargo wharf", 105, 1.8, 33, -47, -1.1, 72, teal, Enum.Material.Concrete)
+	backdrop("Cargo wharf", 105, 1.8, 33, -47, -1.1, 72, teal, Enum.Material.SmoothPlastic)
 	for x = -94, -4, 10 do
-		backdrop("Wharf piling", 1.8, 7, 1.8, x, -2.8, 86, World.steel, Enum.Material.Wood)
+		backdrop("Wharf piling", 1.8, 7, 1.8, x, -2.8, 86, World.steel, Enum.Material.SmoothPlastic)
 		backdrop("Wharf deck seam", 0.2, 0.05, 29, x, -0.18, 72, World.steel)
 	end
-	backdrop("Customs warehouse", 33, 12, 15, -73, 6, 76, cream, Enum.Material.Concrete)
+	backdrop("Customs warehouse", 33, 12, 15, -73, 6, 76, cream, Enum.Material.SmoothPlastic)
 	for _, side in ipairs({ -1, 1 }) do
-		backdrop("Warehouse cladding", 0.42, 11.8, 15.2, -73 + side * 16.4, 6, 76, teal, metal)
-		backdrop("Warehouse roof", 18, 0.65, 17, -73 + side * 8.5, 13.45, 76, teal, metal, -side * 0.17)
+		backdrop("Warehouse cladding", 0.42, 11.8, 15.2, -73 + side * 16.4, 6, 76, teal, flat)
+		backdrop("Warehouse roof", 18, 0.65, 17, -73 + side * 8.5, 13.45, 76, teal, flat, -side * 0.17)
 	end
 	for _, x in ipairs({ -82, -64 }) do
-		backdrop("Loading door frame", 10.2, 8.5, 0.45, x, 4.25, 68.4, teal, metal)
-		backdrop("Loading roller door", 8.8, 7.2, 0.48, x, 3.6, 68.15, World.steel, metal)
+		backdrop("Loading door frame", 10.2, 8.5, 0.45, x, 4.25, 68.4, teal, flat)
+		backdrop("Loading roller door", 8.8, 7.2, 0.48, x, 3.6, 68.15, World.steel, flat)
 		for y = 1, 7 do
-			backdrop("Door slat", 8.7, 0.12, 0.12, x, y, 67.86, cream, metal)
+			backdrop("Door slat", 8.7, 0.12, 0.12, x, y, 67.86, cream, flat)
 		end
 	end
-	local fascia = backdrop("Customs fascia", 16, 2.5, 0.35, -73, 10, 68.3, teal, metal)
+	local fascia = backdrop("Customs fascia", 16, 2.5, 0.35, -73, 10, 68.3, teal, flat)
 	World.surfaceSign(fascia, "BLITZ CUSTOMS", World.white)
 
 	for _, cargo in ipairs({
@@ -287,28 +293,28 @@ function World.buildHarbor()
 		{ -38, 9, 74, World.gold }, { -15, 3, 81, Color3.fromRGB(87, 136, 239) },
 	}) do
 		local x, y, z, color = table.unpack(cargo)
-		backdrop("Freight container", 15.6, 6, 7.4, x, y, z, color, metal)
+		backdrop("Freight container", 15.6, 6, 7.4, x, y, z, color, flat)
 		for offset = -7, 7 do
-			backdrop("Container rib", 0.18, 5.6, 0.22, x + offset, y, z - 3.76, color:Lerp(World.ink, 0.26), metal)
+			backdrop("Container rib", 0.18, 5.6, 0.22, x + offset, y, z - 3.76, color:Lerp(World.ink, 0.26), flat)
 		end
 		for _, side in ipairs({ -1, 1 }) do
-			backdrop("Container frame", 15.8, 0.25, 7.55, x, y + side * 2.87, z, color:Lerp(World.white, 0.22), metal)
+			backdrop("Container frame", 15.8, 0.25, 7.55, x, y + side * 2.87, z, color:Lerp(World.white, 0.22), flat)
 		end
 	end
 
-	backdrop("Crane pedestal", 7, 1.5, 7, -10, 0.55, 67, World.steel, metal)
+	backdrop("Crane pedestal", 7, 1.5, 7, -10, 0.55, 67, World.steel, flat)
 	for _, side in ipairs({ -1, 1 }) do
-		backdrop("Crane tower upright", 0.75, 24, 2, -10 + side * 1.6, 12.8, 67, World.gold, metal)
+		backdrop("Crane tower upright", 0.75, 24, 2, -10 + side * 1.6, 12.8, 67, World.gold, flat)
 	end
 	for y = 3, 23, 4 do
-		backdrop("Crane lattice", 5.2, 0.32, 1.2, -10, y, 67, World.gold, metal, y % 8 == 3 and 0.78 or -0.78)
+		backdrop("Crane lattice", 5.2, 0.32, 1.2, -10, y, 67, World.gold, flat, y % 8 == 3 and 0.78 or -0.78)
 	end
-	backdrop("Crane boom", 38, 1.6, 2.3, -20, 24.8, 67, World.gold, metal)
-	backdrop("Crane boom stay", 24, 0.38, 0.55, -20, 27, 67, World.steel, metal, -0.18)
-	backdrop("Crane operator cab", 4, 3, 3.3, -7, 22, 67, teal, metal)
+	backdrop("Crane boom", 38, 1.6, 2.3, -20, 24.8, 67, World.gold, flat)
+	backdrop("Crane boom stay", 24, 0.38, 0.55, -20, 27, 67, World.steel, flat, -0.18)
+	backdrop("Crane operator cab", 4, 3, 3.3, -7, 22, 67, teal, flat)
 	backdrop("Crane cab window", 3.3, 1.95, 0.15, -7, 22.2, 65.27, Color3.fromRGB(137, 219, 240), Enum.Material.Glass)
-	backdrop("Crane hoist cable", 0.17, 10, 0.17, -32, 19, 67, World.ink, metal)
-	backdrop("Crane hook", 1.15, 0.65, 0.7, -32, 13.75, 67, World.gold, metal)
+	backdrop("Crane hoist cable", 0.17, 10, 0.17, -32, 19, 67, World.ink, flat)
+	backdrop("Crane hook", 1.15, 0.65, 0.7, -32, 13.75, 67, World.gold, flat)
 	return map, belt
 end
 

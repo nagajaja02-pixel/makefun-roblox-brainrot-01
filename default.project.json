@@ -3,6 +3,7 @@
   "tree": {
     "$className": "DataModel",
     "Players": { "$properties": { "CharacterAutoLoads": false } },
+    "ReplicatedStorage": { "BrainrotData": { "$path": "src/shared/BrainrotData.luau" } },
     "ServerScriptService": { "BlitzServer": { "$path": "src/server" } },
     "StarterPlayer": { "StarterPlayerScripts": { "BlitzClient": { "$path": "src/client" } } }
   }

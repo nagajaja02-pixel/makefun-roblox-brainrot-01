@@ -1,4 +1,5 @@
 local World = require(script.Parent.World)
+local flat = Enum.Material.SmoothPlastic
 local Models = {}
 
 local rgb = Color3.fromRGB
@@ -7,7 +8,6 @@ local silver = rgb(177, 202, 213)
 local rose = rgb(244, 96, 110)
 local ball = Enum.PartType.Ball
 local tube = Enum.PartType.Cylinder
-local metal = Enum.Material.Metal
 local neon = Enum.Material.Neon
 
 -- All sculpts face -Z and share a floor plane. Cylinders run along local X.
@@ -15,7 +15,7 @@ local cast = {}
 
 cast["Burrito Bailiff"] = function(p, face, hue)
 	p("Tortilla roll", 2.05, 2.95, 1.65, 0, 1.92, 0, hue, ball)
-	p("Foil wrapper", 2.02, 1.1, 1.65, 0, 1.02, 0, silver, ball, nil, metal)
+	p("Foil wrapper", 2.02, 1.1, 1.65, 0, 1.02, 0, silver, ball, nil, flat)
 	p("Folded seam", 0.22, 1.45, 0.22, 0.66, 1.62, -0.66, ivory, ball, -0.54)
 	for _, side in ipairs({ -1, 1 }) do
 		p("Lettuce fringe", 0.66, 0.56, 0.92, side * 0.66, 3.16, 0, rgb(81, 168, 69), ball)
@@ -30,7 +30,7 @@ end
 
 cast["Toaster Intern"] = function(p, face, hue)
 	p("Enamel toaster", 2.42, 1.62, 1.46, 0, 1.34, 0, hue)
-	p("Chrome plinth", 2.52, 0.24, 1.55, 0, 0.45, 0, silver, nil, nil, metal)
+	p("Chrome plinth", 2.52, 0.24, 1.55, 0, 0.45, 0, silver, nil, nil, flat)
 	p("Toast slot", 1.8, 0.07, 0.55, 0, 2.17, 0, ink)
 	p("Toast crust", 1.75, 1.49, 0.38, -0.15, 2.7, 0, rgb(158, 95, 47), ball, 0.14)
 	p("Toast crumb", 1.5, 1.22, 0.16, -0.15, 2.74, -0.18, gold, ball, 0.14)
@@ -94,7 +94,7 @@ cast["Clam McSpam"] = function(p, face, hue)
 	end
 	p("Clam mantle", 2.79, 0.48, 2.14, 0, 0.83, 0, ivory, ball)
 	p("Spam tin", 1.32, 1.37, 0.88, 0, 1.45, -0.23, rgb(53, 89, 173))
-	p("Tin lid", 1.4, 0.14, 0.96, 0, 2.15, -0.23, silver, nil, nil, metal)
+	p("Tin lid", 1.4, 0.14, 0.96, 0, 2.15, -0.23, silver, nil, nil, flat)
 	p("Tin label", 1.12, 0.79, 0.08, 0, 1.49, -0.69, gold)
 	face(0, 1.7, -0.79, 0.38, 0.94, 0.02, 0.38, 0.48)
 end
@@ -152,7 +152,7 @@ cast["Disco Dumpster"] = function(p, face, hue)
 		p("Caster wheel", 0.31, 0.66, 0.66, side * 1.18, 0.39, 0.05, ink, tube)
 		p("Lift pocket", 0.43, 0.61, 1.11, side * 1.52, 1.47, 0.03, silver)
 	end
-	p("Mirror ball", 1.48, 1.48, 1.48, 0, 2.78, -0.31, silver, ball, nil, metal)
+	p("Mirror ball", 1.48, 1.48, 1.48, 0, 2.78, -0.31, silver, ball, nil, flat)
 	for i = -1, 1 do
 		for j = -1, 1 do
 			p("Mirror tile", 0.29, 0.29, 0.1, i * 0.36, 2.78 + j * 0.36,
@@ -188,8 +188,8 @@ cast["Soup Singularity"] = function(p, face, hue)
 		p("Cream spiral", 0.32, 0.055, 0.3, math.cos(angle) * radius, 1.65,
 			math.sin(angle) * radius * 0.86, gold, ball)
 	end
-	p("Spoon handle", 0.19, 1.59, 0.17, 1.15, 2.18, 0.31, silver, nil, -0.45, metal)
-	p("Spoon scoop", 0.79, 1.03, 0.35, 1.6, 3.1, 0.31, silver, ball, -0.45, metal)
+	p("Spoon handle", 0.19, 1.59, 0.17, 1.15, 2.18, 0.31, silver, nil, -0.45, flat)
+	p("Spoon scoop", 0.79, 1.03, 0.35, 1.6, 3.1, 0.31, silver, ball, -0.45, flat)
 	face(0, 1.09, -1.4, 0.56, 1.01, 0, 0.42, 0.47)
 end
 

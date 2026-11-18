@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local World = require(script.World)
 local Base = require(script.BaseService)
+local Shield = require(script.ShieldService)
 local Money = require(script.MoneyService)
 local Steal = require(script.StealService)
 local Wave = require(script.WaveService)
@@ -17,6 +18,9 @@ local rebirthStore = not RunService:IsStudio() and DataStoreService:GetDataStore
 local feedback = Instance.new("RemoteEvent")
 feedback.Name = "BlitzFeedback"
 feedback.Parent = ReplicatedStorage
+local rebirthRequest = Instance.new("RemoteEvent")
+rebirthRequest.Name = "BlitzRebirth"
+rebirthRequest.Parent = ReplicatedStorage
 
 local function notify(player, text, style)
 	if player.Parent == Players then
@@ -26,12 +30,6 @@ end
 
 local function raidStand(player, victim, index, slot)
 	Steal.beginRaid(player, victim, index, slot, states, notify)
-end
-
-local function activateShield(state, now)
-	state.lockUntil = now + Base.lockDuration
-	state.lockReady = now + Base.lockCooldown
-	Base.updateShield(state, now)
 end
 
 local function upgradeBase(state)
@@ -89,10 +87,17 @@ local function rebirthCollection(state)
 	notify(state.player, "Reborn! Added +50% income.", "success")
 end
 
+rebirthRequest.OnServerEvent:Connect(function(player)
+	local state = states[player]
+	if state and state.ready and not state.savingRebirth and World.aliveRoot(player) then
+		rebirthCollection(state)
+	end
+end)
+
 for _, base in ipairs(bases) do
 	for index, terminal in ipairs(base.controls) do
-		local action = ({ "Raise 26s shield", "Buy two stands", "Reset cash and crew" })[index]
-		World.prompt(terminal, action, terminal.Name, index == 3 and 1.8 or 0.25).Triggered:Connect(function(player)
+		local action = ({ "Raise 26s shield", "Buy two stands" })[index]
+		World.prompt(terminal, action, terminal.Name, 0.25).Triggered:Connect(function(player)
 			local state = states[player]
 			if not state or state.savingRebirth or state.base ~= base or not World.near(player, terminal) then
 				return
@@ -100,15 +105,13 @@ for _, base in ipairs(bases) do
 			if index == 1 then
 				local now = workspace:GetServerTimeNow()
 				if now >= state.lockReady then
-					activateShield(state, now)
+					Shield.activate(state, now)
 					notify(player, "Shield up. Raiders are blocked for 26 seconds.", "success")
 				else
 					notify(player, string.format("Shield ready in %ds.", math.ceil(state.lockReady - now)), "warning")
 				end
-			elseif index == 2 then
-				upgradeBase(state)
 			else
-				rebirthCollection(state)
+				upgradeBase(state)
 			end
 		end)
 	end
@@ -133,9 +136,9 @@ local function assignSafehouse(player)
 	local state = { player = player, base = base, slots = {}, cash = Base.startingCash, rate = 0, level = 1, rebirths = 0 }
 	states[player] = state
 	player:SetAttribute("Carrying", "")
-	player:SetAttribute("Home", base.frame.Position)
+	player:SetAttribute("Home", base.entrance)
 	player.RespawnLocation = nil
-	activateShield(state, workspace:GetServerTimeNow())
+	Shield.activate(state, workspace:GetServerTimeNow())
 	Base.refreshStands(state)
 	Money.publish(state)
 
@@ -168,6 +171,7 @@ local function assignSafehouse(player)
 			Money.publish(state)
 		end
 	end
+	state.ready = true
 	player:LoadCharacter()
 end
 
@@ -182,8 +186,7 @@ Players.PlayerRemoving:Connect(function(player)
 	end
 	Base.clearCollection(state)
 	state.base.owner = nil
-	state.base.title.Text = "AVAILABLE SAFEHOUSE"
-	state.base.gate.Color = World.aqua
+	Shield.clear(state.base)
 	for _, stand in ipairs(state.base.stands) do
 		stand.Color = World.steel
 	end
@@ -204,9 +207,6 @@ RunService.Heartbeat:Connect(function(dt)
 	while incomeClock >= 1 do
 		incomeClock -= 1
 		Money.payIncome(states)
-		for _, state in pairs(states) do
-			Base.updateShield(state, now)
-		end
 	end
 	movementClock += dt
 	if movementClock < 1 / 24 then
@@ -216,6 +216,7 @@ RunService.Heartbeat:Connect(function(dt)
 	movementClock = 0
 	wave:step(now, states, notify)
 	for player, state in pairs(states) do
+		Shield.update(state, now)
 		local root = World.aliveRoot(player)
 		if state.carry and root then
 			if Base.isSheltered(state.base, root.Position) then

@@ -1,4 +1,4 @@
-local Data = require(script.Parent.BrainrotData)
+local Data = require(game:GetService("ReplicatedStorage"):WaitForChild("BrainrotData"))
 local Models = require(script.Parent.BrainrotModels)
 local World = require(script.Parent.World)
 local Base = require(script.Parent.BaseService)
@@ -12,19 +12,19 @@ Conveyor.__index = Conveyor
 
 function Conveyor.new(map, states, notify)
 	local self = setmetatable({ map = map, states = states, notify = notify, offers = {}, clock = 0, serial = 0 }, Conveyor)
-	for index = 1, 11 do
+	for index = 1, 13 do
 		local starter = index == 6 and 1 or index == 5 and 2 or index == 7 and 3
-		self:spawnOffer(-World.beltEnd + 2 + index * 14, starter and Data.create(starter, false) or Data.create(index, true))
+		self:spawnOffer(World.importCenter + 2 + index * 14, starter and Data.create(starter, false) or Data.create(index, true))
 	end
 	return self
 end
 
 function Conveyor:spawnOffer(x, unit)
-	local model = Models.sculpt(self.map, unit, CFrame.new(x, World.beltTop, 0), string.format("BUY  $%d", unit.price))
+	local model = Models.sculpt(self.map, unit, CFrame.new(x, pivotHeight, 0), string.format("BUY  $%d", unit.price))
 	local label = model.PrimaryPart:FindFirstChildOfClass("BillboardGui")
 	label.AlwaysOnTop = false
 	local offer = { model = model, x = x }
-	local visible = math.abs(x) < World.machineCurtain
+	local visible = x > World.importCurtain and x < World.receiverCurtain
 	label.Enabled = visible
 	self.offers[offer] = true
 	local prompt = World.prompt(model.PrimaryPart, "Buy  $" .. unit.price, unit.entry[1])
@@ -56,15 +56,15 @@ function Conveyor:step(dt, now)
 		self.clock -= 3.4
 		self.serial += 1
 		local unit = self.serial % 3 == 0 and Data.create(math.random(3), false) or Data.randomOffer()
-		self:spawnOffer(-World.beltEnd, unit)
+		self:spawnOffer(World.importCenter, unit)
 	end
 	for offer in pairs(self.offers) do
 		offer.x += dt * 4.2
-		if offer.x > World.beltEnd then
+		if offer.x >= World.receiverCurtain + 6 then
 			self.offers[offer] = nil
 			offer.model:Destroy()
 		else
-			local visible = math.abs(offer.x) < World.machineCurtain
+			local visible = offer.x > World.importCurtain and offer.x < World.receiverCurtain
 			offer.prompt.Enabled = visible
 			offer.label.Enabled = visible
 			local stride = now * 7 + offer.x * 0.4

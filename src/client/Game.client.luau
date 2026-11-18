@@ -4,11 +4,13 @@ local RunService = game:GetService("RunService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local TweenService = game:GetService("TweenService")
 
+local Menu = require(script.Parent.Menu)
 local player = Players.LocalPlayer
 local ui = Instance.new("ScreenGui")
 ui.Name = "Brainrot Blitz HUD"
 ui.ResetOnSpawn = false
 ui.Parent = player:WaitForChild("PlayerGui")
+Menu.mount(ui, player)
 
 local ink = Color3.fromRGB(18, 26, 44)
 local white = Color3.fromRGB(240, 247, 255)
@@ -107,7 +109,7 @@ local function refreshEconomy()
 	crew.Text = string.format("%d stands   •   %d rebirths", player:GetAttribute("Capacity") or 4, player:GetAttribute("Rebirths") or 0)
 	local price = player:GetAttribute("Level") == 3 and "All stands unlocked"
 		or "Expand $" .. tostring(player:GetAttribute("UpgradePrice") or 550)
-	upgrade.Text = price .. "   •   Rebirth $" .. tostring(player:GetAttribute("RebirthPrice") or 12000)
+	upgrade.Text = price
 	local cargo = player:GetAttribute("Carrying")
 	if cargo and cargo ~= "" then
 		objective.Text = "DELIVER  /  " .. cargo
@@ -118,7 +120,7 @@ local function refreshEconomy()
 	end
 end
 
-for _, attribute in ipairs({ "Cash", "Rate", "Capacity", "Level", "Rebirths", "UpgradePrice", "RebirthPrice", "Carrying" }) do
+for _, attribute in ipairs({ "Cash", "Rate", "Capacity", "Level", "Rebirths", "UpgradePrice", "Carrying" }) do
 	player:GetAttributeChangedSignal(attribute):Connect(refreshEconomy)
 end
 refreshEconomy()
@@ -143,7 +145,7 @@ local function markHome()
 	local home = player:GetAttribute("Home")
 	beacon.Enabled = home ~= nil
 	if home then
-		homeMarker.Position = home + Vector3.new(0, 10, 0)
+		homeMarker.Position = home + Vector3.new(0, 13, 0)
 	end
 end
 player:GetAttributeChangedSignal("Home"):Connect(markHome)
