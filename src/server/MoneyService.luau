@@ -1,58 +1,61 @@
-local Money={states={}}
-local RunService=game:GetService("RunService")
-local store=game:GetService("DataStoreService"):GetDataStore("BlitzRebirthsV1")
-function Money.capacity(state) return 4+(state.level-1)*2 end
-function Money.upgradePrice(state) return 550*state.level^2 end
-function Money.rebirthPrice(state) return 12000*(state.rebirths+1) end
-function Money.publish(player)
- local s=Money.states[player] if not s then return end
- local income=0
- for _,slot in pairs(s.slots) do if not slot.inTransit then income+=slot.offer.rate end end
- player:SetAttribute("Cash",s.cash) player:SetAttribute("Level",s.level) player:SetAttribute("Capacity",Money.capacity(s))
- player:SetAttribute("Rebirths",s.rebirths) player:SetAttribute("RebirthPrice",Money.rebirthPrice(s)) player:SetAttribute("UpgradePrice",Money.upgradePrice(s))
- player:SetAttribute("Income",math.floor(income*(1+0.5*s.rebirths)))
+local Run=game:GetService("RunService")
+local Store=game:GetService("DataStoreService"):GetDataStore("BlitzRebirthsV1")
+local B=require(script.Parent.BaseService)
+local E={}
+function E.sync(player)
+ local level=player:GetAttribute("Level") or 1
+ local rebirths=player:GetAttribute("Rebirths") or 0
+ player:SetAttribute("Capacity",4+(level-1)*2)
+ player:SetAttribute("UpgradePrice",550*level*level)
+ player:SetAttribute("RebirthPrice",12000*(rebirths+1))
+ B.refresh(player)
 end
-function Money.addPlayer(player)
- local s={cash=150,level=1,rebirths=0,slots={},carry=nil,loading=true}
- Money.states[player]=s Money.publish(player)
- if not RunService:IsStudio() then
-  local ok,value=pcall(function() return store:GetAsync(tostring(player.UserId)) end)
-  if Money.states[player]~=s then return end
-  if ok and type(value)=="number" and value>=0 and value==math.floor(value) then s.rebirths=value end
- end
- s.loading=false Money.publish(player)
- return s
-end
-function Money.save(player)
- local s=Money.states[player]
- if s and not RunService:IsStudio() and not s.loading then
-  local count=s.rebirths
-  local ok,err=pcall(function() store:UpdateAsync(tostring(player.UserId),function(old) return math.max(type(old)=="number" and old or 0,count) end) end)
-  if not ok then warn("Rebirth save failed: ",err) end
+function E.join(player)
+ player:SetAttribute("Cash",150) player:SetAttribute("Level",1) player:SetAttribute("Rebirths",0)
+ E.sync(player)
+ if not Run:IsStudio() then
+  local ok,value=pcall(function() return Store:GetAsync(tostring(player.UserId)) end)
+  if ok and type(value)=="number" and value>=0 then player:SetAttribute("Rebirths",math.floor(value)) E.sync(player) end
  end
 end
-function Money.spend(player,amount)
- local s=Money.states[player]
- if not s or s.loading or amount<0 or s.cash<amount then return false end
- s.cash-=amount Money.publish(player) return true
+function E.save(player)
+ if Run:IsStudio() then return end
+ local count=player:GetAttribute("Rebirths") or 0
+ local ok,err=pcall(function() Store:UpdateAsync(tostring(player.UserId),function(previous) return math.max(tonumber(previous) or 0,count) end) end)
+ if not ok then warn("Rebirth save failed: ",err) end
 end
-function Money.credit(player,amount)
- local s=Money.states[player] if s then s.cash+=amount Money.publish(player) end
+function E.spend(player,cost)
+ local cash=player:GetAttribute("Cash") or 0
+ if cash<cost then return false end
+ player:SetAttribute("Cash",cash-cost) return true
 end
-function Money.tick()
- for player in pairs(Money.states) do Money.publish(player) Money.credit(player,player:GetAttribute("Income") or 0) end
+function E.add(player,amount)
+ player:SetAttribute("Cash",(player:GetAttribute("Cash") or 0)+amount)
 end
-function Money.upgrade(player)
- local s=Money.states[player] if not s or s.level>=3 then return false end
- if not Money.spend(player,Money.upgradePrice(s)) then return false end
- s.level+=1 Money.publish(player) return true
+function E.upgrade(player)
+ local level=player:GetAttribute("Level") or 1
+ if level>=3 then return "All eight stands unlocked." end
+ if not E.spend(player,550*level*level) then return "Not enough cash." end
+ player:SetAttribute("Level",level+1) E.sync(player)
+ return "Base expanded!"
 end
-function Money.rebirth(player,clear)
- local s=Money.states[player] if not s or s.loading or s.carry then return false,"Put down your brainrot first." end
- for _,slot in pairs(s.slots) do if slot.inTransit then return false,"A raid or delivery is in transit." end end
- if not Money.spend(player,Money.rebirthPrice(s)) then return false,"Not enough cash." end
- clear(player) s.rebirths+=1 s.cash=150 s.level=1 Money.publish(player)
- task.spawn(Money.save,player)
- return true,"Rebirth complete! Income increased."
+function E.income()
+ for _,plot in ipairs(B.plots) do if plot.owner then
+  local rate=0
+  for _,slot in ipairs(plot.slots) do if slot.item and not slot.inTransit then rate+=slot.item.rate end end
+  local income=math.floor(rate*(1+0.5*(plot.owner:GetAttribute("Rebirths") or 0)))
+  E.add(plot.owner,income) plot.owner:SetAttribute("Income",income)
+ end end
 end
-return Money
+function E.rebirth(player)
+ if player:GetAttribute("Carrying") then return "Put down your brainrot first." end
+ local plot=B.get(player) if not plot then return "No safehouse available." end
+ for _,slot in ipairs(plot.slots) do if slot.inTransit then return "A raid is still in transit." end end
+ if not E.spend(player,12000*((player:GetAttribute("Rebirths") or 0)+1)) then return "Not enough cash." end
+ for _,slot in ipairs(plot.slots) do if slot.item then slot.item.model:Destroy() end slot.item=nil slot.inTransit=false end
+ player:SetAttribute("Rebirths",(player:GetAttribute("Rebirths") or 0)+1)
+ player:SetAttribute("Cash",150) player:SetAttribute("Level",1)
+ E.sync(player) task.spawn(E.save,player)
+ return "Reborn! Income increased by 50%."
+end
+return E

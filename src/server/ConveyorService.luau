@@ -1,46 +1,49 @@
-local Data=require(game:GetService("ReplicatedStorage").Shared.BrainrotData)
+local D=require(game.ReplicatedStorage.Shared.BrainrotData)
 local Models=require(script.Parent.BrainrotModels)
-local World=require(script.Parent.World)
-local Money=require(script.Parent.MoneyService)
-local Base=require(script.Parent.BaseService)
-local Conveyor={offers={},rng=Random.new(),elapsed=0,count=0,time=0}
-function Conveyor.spawn(offer,x)
- local model=Models.create(offer,World.root)
- model:PivotTo(CFrame.new(x,1.8,0))
- local item={offer=offer,model=model,x=x,phase=Conveyor.rng:NextNumber(0,math.pi*2)}
- table.insert(Conveyor.offers,item)
- local prompt=World.prompt(model.PrimaryPart,"Buy $"..offer.price,offer.data.name,0,function(player)
-  if item.sold or not model.Parent or not Base.near(player,model.PrimaryPart,11) then return end
-  local s=Money.states[player]
-  if not s or s.carry or not Base.freeSlot(player) then Base.notify(player,"Empty your hands and unlock a free stand.") return end
-  if not Money.spend(player,offer.price) then Base.notify(player,"Not enough cash.") return end
-  item.sold=true
-  for _,obj in ipairs(model:GetDescendants()) do if obj:IsA("ProximityPrompt") then obj:Destroy() end end
-  if not Base.install(player,offer,model) then item.sold=false Money.credit(player,offer.price) model:Destroy() return end
-  Base.notify(player,offer.data.name.." delivered to your safehouse.")
+local W=require(script.Parent.World)
+local B=require(script.Parent.BaseService)
+local E=require(script.Parent.MoneyService)
+local Steal=require(script.Parent.StealService)
+local C={offers={},elapsed=0,spawnCount=0}
+function C.spawn(item,x)
+ item.model=Models.create(item,W.root)
+ local offer={item=item,x=x}
+ item.model:PivotTo(CFrame.new(x,1.8,0))
+ local prompt
+ prompt=W.prompt(item.model.PrimaryPart,"Buy $"..item.price,D.cast[item.id][1],function(player)
+  if offer.sold or not Steal.near(player,item.model.PrimaryPart) or Steal.carriers[player] then return end
+  if not B.freeSlot(player) then C.notify(player,"Expand your base or free a stand.") return end
+  if not E.spend(player,item.price) then C.notify(player,"Not enough cash.") return end
+  offer.sold=true
+  if Steal.carry(player,item,"purchase") then
+   prompt:Destroy() Steal.attach(item) Steal.prompts(item,false)
+   C.notify(player,"Bring it to your safehouse!")
+  else offer.sold=false E.add(player,item.price) end
  end)
- return item
+ table.insert(C.offers,offer)
 end
-function Conveyor.start()
+function C.init(notify)
+ C.notify=notify
  for i=1,7 do
-  local starter=({[5]=2,[6]=1,[7]=3})[i]
-  Conveyor.spawn(starter and Data.offer(starter,false,Conveyor.rng) or Data.randomOffer(Conveyor.rng,false),-115+i*17)
+  local starters={[5]=2,[6]=1,[7]=3}
+  C.spawn(starters[i] and D.make(starters[i],false) or D.random(true),-115+i*17)
  end
 end
-function Conveyor.step(dt)
- Conveyor.time+=dt Conveyor.elapsed+=dt
- while Conveyor.elapsed>=3.4 do
-  Conveyor.elapsed-=3.4 Conveyor.count+=1
-  Conveyor.spawn(Data.randomOffer(Conveyor.rng,Conveyor.count%3==0),-121)
+function C.step(dt,now)
+ C.elapsed+=dt
+ while C.elapsed>=3.4 do
+  C.elapsed-=3.4 C.spawnCount+=1
+  local item=C.spawnCount%3==0 and D.make(math.random(1,3),false) or D.random(true)
+  C.spawn(item,-121)
  end
- for i=#Conveyor.offers,1,-1 do
-  local item=Conveyor.offers[i]
-  if item.sold or not item.model.Parent then table.remove(Conveyor.offers,i)
+ for i=#C.offers,1,-1 do
+  local offer=C.offers[i]
+  if offer.sold then table.remove(C.offers,i)
   else
-   item.x+=4.2*dt
-   if item.x>=121 then item.model:Destroy() table.remove(Conveyor.offers,i)
-   else item.model:PivotTo(CFrame.new(item.x,1.8+math.abs(math.sin(Conveyor.time*3+item.phase))*0.26,0)) end
+   offer.x+=4.2*dt
+   if offer.x>=121 then offer.item.model:Destroy() table.remove(C.offers,i)
+   else offer.item.model:PivotTo(CFrame.new(offer.x,1.8+math.abs(math.sin(now*3))*0.26,0)) end
   end
  end
 end
-return Conveyor
+return C

@@ -1,42 +1,42 @@
 local Players=game:GetService("Players")
-local World=require(script.Parent.World)
-local Base=require(script.Parent.BaseService)
-local Wave={phase="CALM",nextAt=0,hit={}}
-function Wave.start(remote)
- Wave.remote=remote Wave.nextAt=os.clock()+52
+local B=require(script.Parent.BaseService)
+local W=require(script.Parent.World)
+local V={phase="CALM",hit={}}
+function V.init(notify,now)
+ V.notify=notify V.next=now+52
+ V.wall=W.part(W.root,"Tsunami",Vector3.new(11,16,200),CFrame.new(-146,8,0),Color3.fromRGB(35,172,235),Enum.Material.Glass)
+ V.wall.Transparency=1 V.wall.CanCollide=false
+ V.crest=W.part(W.root,"Wave crest",Vector3.new(12,2,200),CFrame.new(-146,16,0),W.aqua,Enum.Material.Neon)
+ V.crest.Transparency=1 V.crest.CanCollide=false
+ workspace:SetAttribute("WavePhase","CALM") workspace:SetAttribute("WaveDeadline",V.next)
 end
-function Wave.broadcast(text)
- Wave.remote:FireAllClients("Notice",text)
-end
-function Wave.step()
- local now=os.clock()
- if Wave.phase=="CALM" and now>=Wave.nextAt then
-  Wave.phase="EVACUATE" Wave.endsAt=now+14
-  Wave.broadcast("Tsunami incoming! Reach your safehouse.")
- elseif Wave.phase=="EVACUATE" and now>=Wave.endsAt then
-  Wave.phase="TSUNAMI" Wave.startedAt=now Wave.endsAt=now+8 Wave.hit={}
-  Wave.wall=World.part(World.root,"TsunamiWater",Vector3.new(11,16,200),CFrame.new(-146,8,0),Color3.fromRGB(29,157,235),Enum.Material.Glass,false)
-  Wave.wall.Transparency=0.3
-  Wave.crest=World.part(World.root,"TsunamiCrest",Vector3.new(12,2,200),CFrame.new(-146,16,0),Color3.fromRGB(170,246,255),Enum.Material.Neon,false)
- elseif Wave.phase=="TSUNAMI" then
-  local progress=math.clamp((now-Wave.startedAt)/8,0,1)
+function V.step(now)
+ if V.phase=="CALM" and now>=V.next then
+  V.phase="EVACUATE" V.next=now+14
+  for _,p in ipairs(Players:GetPlayers()) do V.notify(p,"Tsunami incoming! Reach your safehouse.") end
+  workspace:SetAttribute("WavePhase",V.phase) workspace:SetAttribute("WaveDeadline",V.next)
+ elseif V.phase=="EVACUATE" and now>=V.next then
+  V.phase="SWEEP" V.started=now V.hit={} V.wall.Transparency=0.24 V.crest.Transparency=0.08
+  workspace:SetAttribute("WavePhase",V.phase) workspace:SetAttribute("WaveDeadline",now+8)
+ end
+ if V.phase=="SWEEP" then
+  local progress=math.clamp((now-V.started)/8,0,1)
   local x=-146+292*progress
-  Wave.wall.CFrame=CFrame.new(x,8,0) Wave.crest.CFrame=CFrame.new(x,16,0)
+  V.wall.CFrame=CFrame.new(x,8,0) V.crest.CFrame=CFrame.new(x,16,0)
   for _,player in ipairs(Players:GetPlayers()) do
-   local character=player.Character local root=character and character:FindFirstChild("HumanoidRootPart") local hum=character and character:FindFirstChildOfClass("Humanoid")
-   if root and hum and hum.Health>0 and not Wave.hit[player] and math.abs(root.Position.X-x)<=8 and math.abs(root.Position.Z)<=100 then
-    Wave.hit[player]=true
-    local plot=Base.byPlayer[player]
-    if plot and Base.isSheltered(plot,root.Position) then Wave.remote:FireClient(player,"Notice","Safehouse held.")
-    else hum.Health=0 Wave.remote:FireClient(player,"Notice","Swept away!") end
+   local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+   local hum=player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+   if root and hum and hum.Health>0 and not V.hit[player] and math.abs(root.Position.X-x)<=8 and math.abs(root.Position.Z)<=100 then
+    V.hit[player]=true
+    local safe=false
+    for _,plot in ipairs(B.plots) do if B.isSheltered(plot,root.Position) then safe=true break end end
+    if safe then V.notify(player,"Safehouse held.") else hum.Health=0 V.notify(player,"Swept away!") end
    end
   end
-  if now>=Wave.endsAt then
-   Wave.wall:Destroy() Wave.crest:Destroy() Wave.phase="CALM" Wave.nextAt=now+54
-   Wave.broadcast("Harbor clear. Back to business!")
+  if progress>=1 then
+   V.wall.Transparency=1 V.crest.Transparency=1 V.phase="CALM" V.next=now+54
+   workspace:SetAttribute("WavePhase","CALM") workspace:SetAttribute("WaveDeadline",V.next)
   end
  end
- local deadline=Wave.phase=="CALM" and Wave.nextAt or Wave.endsAt
- workspace:SetAttribute("WavePhase",Wave.phase) workspace:SetAttribute("WaveSeconds",math.max(0,math.ceil(deadline-now)))
 end
-return Wave
+return V

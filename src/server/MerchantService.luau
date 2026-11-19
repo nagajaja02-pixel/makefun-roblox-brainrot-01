@@ -1,32 +1,20 @@
-local World=require(script.Parent.World)
-local Base=require(script.Parent.BaseService)
+local W=require(script.Parent.World)
 local Steal=require(script.Parent.StealService)
-local Merchant={}
-function Merchant.build()
- local folder=Instance.new("Model") folder.Name="BrainrotShop" folder.Parent=World.root
- local cf=CFrame.new(41,0,-16)*CFrame.Angles(0,math.pi,0)
- local C=World.Colors
- local function part(name,size,x,y,z,color)
-  return World.part(folder,name,size,cf*CFrame.new(x,y,z),color,nil,false)
- end
- part("ShopPlatform",Vector3.new(12,0.3,9),0,0.15,0,C.ink)
- part("Counter",Vector3.new(9,2,2),0,1.2,-2.5,Color3.fromRGB(25,169,164))
- for _,x in ipairs({-5,5}) do part("AwningPost",Vector3.new(0.4,6,0.4),x,3,0,C.ink) end
- part("ShopAwning",Vector3.new(12,0.5,7),0,6,0,C.gold)
- local board=part("ShopSign",Vector3.new(11,2,0.3),0,6.7,-3.5,C.ink)
- World.sign(folder,board,"BRAINROT SHOP",C.aqua,38)
- local body=part("MerchantTorso",Vector3.new(1.8,2,1),0,2.5,0,C.steel)
- local head=part("MerchantHead",Vector3.new(1.5,1.5,1.5),0,4.2,0,C.gold) head.Shape=Enum.PartType.Ball
- part("MerchantHat",Vector3.new(2.1,0.35,1.8),0,5,0,C.ink)
- for _,x in ipairs({-1,1}) do
-  part("MerchantArm",Vector3.new(0.5,1.8,0.5),x*1.2,2.6,0,C.gold)
-  part("MerchantLeg",Vector3.new(0.6,1,0.6),x*0.5,0.8,0,C.ink)
-  part("MerchantEye",Vector3.new(0.15,0.2,0.1),x*0.3,4.3,-0.74,C.ink)
- end
- local terminal=part("SellTerminal",Vector3.new(3,0.5,1.5),0,2.5,-2.5,C.gold)
- World.prompt(terminal,"Sell Carried Brainrot","50% of purchase price",0,function(player)
-  if Base.near(player,terminal,12) then Steal.sell(player) end
+local M={}
+function M.build(notify)
+ local npc=Instance.new("Model") npc.Name="Brainrot Shop Merchant" npc.Parent=W.root
+ local origin=CFrame.new(41,0,-16)*CFrame.Angles(0,math.pi,0)
+ local function p(n,size,pos,col) return W.part(npc,n,size,origin*CFrame.new(pos),col) end
+ local body=p("Merchant coat",Vector3.new(2,2.5,1),Vector3.new(0,2.5,0),Color3.fromRGB(25,169,164))
+ p("Head",Vector3.new(1.4,1.4,1.4),Vector3.new(0,4.4,0),W.gold)
+ p("Hat",Vector3.new(2,0.4,2),Vector3.new(0,5.2,0),W.ink)
+ for _,x in ipairs({-0.65,0.65}) do p("Leg",Vector3.new(0.6,1.3,0.7),Vector3.new(x,0.65,0),W.ink) p("Arm",Vector3.new(0.5,2,0.6),Vector3.new(x*2,2.5,0),W.gold) end
+ for _,x in ipairs({-0.3,0.3}) do p("Eye",Vector3.new(0.15,0.2,0.1),Vector3.new(x,4.5,-0.75),W.ink) end
+ local sign=p("Brainrot Shop",Vector3.new(12,3,0.5),Vector3.new(0,7,0),W.ink)
+ W.sign(sign,"BRAINROT SHOP / SELL 50%",W.aqua)
+ local counter=p("Counter",Vector3.new(7,2.4,2),Vector3.new(0,1.2,-2),W.steel)
+ W.prompt(counter,"Sell carried brainrot","Brainrot Shop · 50% refund",function(player)
+  if Steal.near(player,counter) then notify(player,Steal.sell(player)) end
  end)
- Merchant.terminal=terminal
 end
-return Merchant
+return M

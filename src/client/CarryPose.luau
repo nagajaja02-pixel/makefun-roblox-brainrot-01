@@ -1,41 +1,39 @@
-local Players=game:GetService("Players")
-local RunService=game:GetService("RunService")
-local CarryPose={records={}}
-local function restore(record)
- for motor,original in pairs(record.motors) do if motor.Parent then motor.C0=original motor.Transform=CFrame.identity end end
- record.motors={}
-end
-local function update(player)
- local record=CarryPose.records[player] if not record then return end
- local char=player.Character
- if record.character~=char then restore(record) record.character=char end
- if not char or not player:GetAttribute("Carrying") then
-  if next(record.motors) then restore(record) end
-  return
+local Run=game:GetService("RunService")
+local Pose={}
+function Pose.start(player)
+ local joints={}
+ local character
+ local function bind(char)
+  joints={} character=char
+  task.spawn(function()
+   char:WaitForChild("Humanoid",10)
+   task.wait(0.4)
+   if character~=char then return end
+   for _,v in ipairs(char:GetDescendants()) do
+    if v:IsA("Motor6D") and (v.Name=="Right Shoulder" or v.Name=="Left Shoulder" or v.Name=="RightShoulder" or v.Name=="LeftShoulder") then
+     table.insert(joints,{joint=v,neutral=v.C0})
+    end
+   end
+  end)
  end
- for _,joint in ipairs(char:GetDescendants()) do
-  if joint:IsA("Motor6D") and (joint.Name=="Right Shoulder" or joint.Name=="Left Shoulder" or joint.Name=="RightShoulder" or joint.Name=="LeftShoulder") then
-   if not record.motors[joint] then record.motors[joint]=joint.C0 end
-   local original=record.motors[joint]
-   if joint.Name=="Right Shoulder" then joint.C0=original*CFrame.Angles(0,0,math.rad(165))
-   elseif joint.Name=="Left Shoulder" then joint.C0=original*CFrame.Angles(0,0,math.rad(-165))
-   else joint.C0=original*CFrame.Angles(math.rad(165),0,0) end
-   joint.Transform=CFrame.identity
+ player.CharacterAdded:Connect(bind)
+ if player.Character then bind(player.Character) end
+ Run.PreSimulation:Connect(function()
+  if player:GetAttribute("Carrying") then
+   for _,record in ipairs(joints) do if record.joint.Parent then record.joint.Transform=CFrame.identity end end
   end
- end
-end
-function CarryPose.start()
- local function add(player) CarryPose.records[player]={motors={}} end
- for _,player in ipairs(Players:GetPlayers()) do add(player) end
- Players.PlayerAdded:Connect(add)
- Players.PlayerRemoving:Connect(function(player)
-  local record=CarryPose.records[player] if record then restore(record) end CarryPose.records[player]=nil
  end)
- RunService.PreSimulation:Connect(function()
-  for player in pairs(CarryPose.records) do update(player) end
- end)
- RunService:BindToRenderStep("BlitzCarryPose",Enum.RenderPriority.Character.Value+1,function()
-  for player in pairs(CarryPose.records) do update(player) end
+ Run.RenderStepped:Connect(function()
+  local carrying=player:GetAttribute("Carrying")==true
+  for _,record in ipairs(joints) do
+   if record.joint.Parent then
+    local r6=record.joint.Name:find(" ")~=nil
+    local right=record.joint.Name:find("Right")~=nil
+    local rotation=r6 and CFrame.Angles(0,0,right and math.rad(155) or math.rad(-155)) or CFrame.Angles(math.rad(165),0,right and -0.15 or 0.15)
+    record.joint.C0=carrying and record.neutral*rotation or record.neutral
+    if carrying then record.joint.Transform=CFrame.identity end
+   end
+  end
  end)
 end
-return CarryPose
+return Pose

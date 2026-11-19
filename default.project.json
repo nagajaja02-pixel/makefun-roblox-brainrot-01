@@ -3,23 +3,24 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
       "Shared": { "$path": "src/shared" }
     },
     "ServerScriptService": {
+      "$className": "ServerScriptService",
       "BlitzServer": { "$path": "src/server" }
     },
     "StarterPlayer": {
-      "$properties": { "CameraMinZoomDistance": 7, "CameraMaxZoomDistance": 45 },
+      "$className": "StarterPlayer",
       "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
         "BlitzClient": { "$path": "src/client" }
       }
     },
     "Workspace": {
+      "$className": "Workspace",
       "$properties": { "FilteringEnabled": true, "Gravity": 196.2 }
     },
-    "Lighting": {
-      "$properties": { "ClockTime": 10.5, "Brightness": 3.5 }
-    },
-    "SoundService": { "$properties": { "RespectFilteringEnabled": true } }
+    "SoundService": { "$className": "SoundService" }
   }
 }
